@@ -30,6 +30,23 @@ const UserSchema = new mongoose.Schema({
     minlength: 6,
     select: false,
   },
+  averageRating: {
+    type: Number,
+    min: [1, "Puan en az 1 olabilir"],
+    max: [10, "Puan en çok 10 olabilir"], // İstersen 5 üzerinden de yapabilirsin
+    default: 0,
+  },
+  ratingCount: {
+    // Kaç kişi oy verdi?
+    type: Number,
+    default: 0,
+  },
+  // -----------------------
+
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
   createdAt: {
