@@ -5,21 +5,27 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const connectDB = require("./config/db");
+const auth = require("./routes/auth"); // Rotaları import ettik
 
 // Ortam değişkenlerini yükle
 dotenv.config();
 
+// Veritabanına bağlan
+connectDB();
+
 // App Başlatma
 const app = express();
 
-// --- Middlewares (Ara Yazılımlar) ---
+// --- ÖNEMLİ: Middlewares (ÖNCE BUNLAR ÇALIŞMALI) ---
+
 // 1. Güvenlik (Helmet)
 app.use(helmet());
 
 // 2. Cross-Origin Resource Sharing (Frontend'in erişimi için)
 app.use(cors());
 
-// 3. JSON veri okuma
+// 3. JSON veri okuma (BU SATIR ROTALARDAN ÖNCE OLMALI)
 app.use(express.json());
 
 // 4. Loglama (Sadece development modunda)
@@ -27,7 +33,10 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// --- Rotalar (Test) ---
+// --- Rotalar (Middleware'lerden SONRA) ---
+app.use("/api/v1/auth", auth);
+
+// Test Rotası
 app.get("/", (req, res) => {
   res.send("API Çalışıyor... Hizmet Uygulaması Backend");
 });
