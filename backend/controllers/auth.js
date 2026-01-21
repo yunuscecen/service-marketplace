@@ -61,6 +61,15 @@ exports.login = async (req, res, next) => {
   }
 };
 
+exports.getMe = async (req, res, next) => {
+  // req.user, middleware sayesinde buraya dolu geliyor
+  const user = await User.findById(req.user.id);
+
+  res.status(200).json({
+    success: true,
+    data: user,
+  });
+};
 // Yardımcı Fonksiyon: Token oluşturup response dönme
 const sendTokenResponse = (user, statusCode, res) => {
   // Modeldeki metodu kullan

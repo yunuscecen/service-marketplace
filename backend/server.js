@@ -6,7 +6,9 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
+
 const auth = require("./routes/auth"); // Rotaları import ettik
+const services = require("./routes/service");
 
 // Ortam değişkenlerini yükle
 dotenv.config();
@@ -35,7 +37,7 @@ if (process.env.NODE_ENV === "development") {
 
 // --- Rotalar (Middleware'lerden SONRA) ---
 app.use("/api/v1/auth", auth);
-
+app.use("/api/v1/services", services);
 // Test Rotası
 app.get("/", (req, res) => {
   res.send("API Çalışıyor... Hizmet Uygulaması Backend");
