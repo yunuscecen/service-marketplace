@@ -71,3 +71,66 @@ exports.getOffersForRequest = async (req, res, next) => {
     res.status(400).json({ success: false, error: error.message });
   }
 };
+
+// ... (Önceki kodların altına ekle)
+
+// @desc    Teklifi Kabul Et (İlan Sahibi Yapar)
+// @route   PUT /api/v1/offers/:id/accept
+// @access  Private (Sadece İlan Sahibi)
+exports.acceptOffer = async (req, res, next) => {
+  try {
+    // 1. Kabul edilecek teklifi bul
+    const offer = await Offer.findById(req.params.id);
+
+    if (!offer) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Teklif bulunamadı" });
+    }
+
+    // 2. İlanı bul
+    const request = await ServiceRequest.findById(offer.request);
+
+    // 3. Yetki Kontrolü: Bu ilanın sahibi sen misin?
+    if (request.user.toString() !== req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error:
+          "Bu işlem için yetkiniz yok. Sadece ilan sahibi teklifi kabul edebilir.",
+      });
+    }
+
+    // 4. İlan zaten kapandıysa işlem yapma
+    if (request.status === "completed" || request.status === "in_progress") {
+      return res.status(400).json({
+        success: false,
+        error: "Bu iş için zaten bir anlaşma yapılmış.",
+      });
+    }
+
+    // --- KRİTİK İŞLEMLER ---
+
+    // A. Seçilen teklifi 'accepted' yap
+    offer.status = "accepted";
+    await offer.save();
+
+    // B. Bu ilana ait DİĞER tüm teklifleri 'rejected' yap (Bulk Update)
+    await Offer.updateMany(
+      { request: request._id, _id: { $ne: offer._id } }, // Bu ilan ID'si OLAN ama bu teklif ID'si OLMAYANLAR
+      { status: "rejected" },
+    );
+
+    // C. İlanın durumunu 'in_progress' (İş başladı) yap
+    request.status = "in_progress";
+    await request.save();
+
+    res.status(200).json({
+      success: true,
+      data: offer,
+      message:
+        "Teklif kabul edildi, diğer teklifler reddedildi ve iş süreci başladı.",
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
