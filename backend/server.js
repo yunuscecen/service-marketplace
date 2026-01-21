@@ -7,8 +7,10 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
 
-const auth = require("./routes/auth"); // Rotaları import ettik
+// Routes
+const auth = require("./routes/auth");
 const services = require("./routes/service");
+const serviceRequests = require("./routes/serviceRequest");
 
 // Ortam değişkenlerini yükle
 dotenv.config();
@@ -35,9 +37,10 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// --- Rotalar (Middleware'lerden SONRA) ---
+// --- Routes ---
 app.use("/api/v1/auth", auth);
 app.use("/api/v1/services", services);
+app.use("/api/v1/requests", serviceRequests);
 // Test Rotası
 app.get("/", (req, res) => {
   res.send("API Çalışıyor... Hizmet Uygulaması Backend");
