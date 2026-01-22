@@ -1,29 +1,37 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom"; // Link eklendi
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { io } from "socket.io-client";
 import {
   ArrowLeft,
   MapPin,
   Calendar,
   Send,
-  AlertCircle,
   CheckCircle,
-  Lock, // Lock ikonu eklendi
+  Lock,
+  MessageCircle,
+  Phone,
 } from "lucide-react";
 import toast from "react-hot-toast";
+
+// Socket sunucu adresi (Backend URL'niz)
+const socket = io("http://localhost:5000");
 
 const JobDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const scrollRef = useRef();
 
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [myOffer, setMyOffer] = useState(null);
+  const [chat, setChat] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
 
-  // Kullanıcının teklif hakkı var mı kontrolü
   const hasCredits = user?.credits > 0;
 
   const [offerData, setOfferData] = useState({
@@ -50,26 +58,53 @@ const JobDetail = () => {
 
           if (found) {
             setMyOffer(found);
+            const chatRes = await api.post("/chats", {
+              receiverId: jobRes.data.data.user._id,
+              requestId: id,
+            });
+            setChat(chatRes.data.data);
+            const msgRes = await api.get(
+              `/chats/${chatRes.data.data._id}/messages`,
+            );
+            setMessages(msgRes.data.data);
+            socket.emit("join_chat", chatRes.data.data._id);
           }
         }
       } catch (error) {
-        // Hata yönetimi
+        console.error("Veri yükleme hatası");
       } finally {
         setLoading(false);
       }
     };
-
-    if (user) fetchData();
+    fetchData();
   }, [id, user]);
+
+  // --- KRİTİK DÜZELTME: ÇİFT MESAJI ENGELLEYEN SOCKET DİNLEYİCİSİ ---
+  useEffect(() => {
+    socket.on("receive_message", (data) => {
+      if (chat && data.chatId === chat._id) {
+        // Mesajı gönderen kişi BEN DEĞİLSEM listeye ekle
+        const currentUserId = user?._id || user?.id;
+        const senderId = data.sender?._id || data.sender;
+
+        if (senderId !== currentUserId) {
+          setMessages((prev) => [...prev, data]);
+        }
+      }
+    });
+    return () => socket.off("receive_message");
+  }, [chat, user]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Güvenlik: Eğer hakkı yoksa submit işlemini engelle
     if (!hasCredits) {
       toast.error("Teklif verebilmek için paket satın almalısınız.");
       return;
     }
-
     try {
       await api.post("/offers", {
         requestId: id,
@@ -78,22 +113,39 @@ const JobDetail = () => {
         message: offerData.message,
       });
       toast.success("Teklifiniz başarıyla gönderildi!");
-
-      setMyOffer({
-        price: offerData.price,
-        deliveryTime: offerData.deliveryTime,
-        message: offerData.message,
-        status: "pending",
-      });
+      window.location.reload();
     } catch (error) {
       toast.error(error.response?.data?.error || "Teklif gönderilemedi.");
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+
+    const messageData = {
+      chatId: chat._id,
+      text: newMessage,
+      sender: user._id || user.id,
+    };
+
+    try {
+      const res = await api.post("/chats/message", messageData);
+      // Socket ile gönder
+      socket.emit("send_message", { ...res.data.data, chatId: chat._id });
+
+      // Kendi listeme ekle (Hemen görünmesi için)
+      setMessages((prev) => [...prev, res.data.data]);
+      setNewMessage("");
+    } catch (error) {
+      toast.error("Mesaj gönderilemedi.");
     }
   };
 
   if (loading)
     return (
       <DashboardLayout>
-        <div className="p-10 text-center">Yükleniyor...</div>
+        <div className="p-10 text-center text-gray-400">Yükleniyor...</div>
       </DashboardLayout>
     );
   if (!job) return null;
@@ -107,8 +159,8 @@ const JobDetail = () => {
         <ArrowLeft size={18} className="mr-2" /> Geri Dön
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* SOL: İLAN DETAYLARI */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+        {/* SOL KOLON (Değişmedi) */}
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 mb-2">
@@ -121,11 +173,9 @@ const JobDetail = () => {
                 {job.status === "active" ? "Teklife Açık" : "Bekliyor"}
               </span>
             </div>
-
             <h1 className="text-2xl font-bold text-gray-900 mb-4">
               {job.service?.name}
             </h1>
-
             <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
               <span className="flex items-center gap-1">
                 <MapPin size={16} /> {job.city}/{job.district}
@@ -135,98 +185,109 @@ const JobDetail = () => {
                 {new Date(job.createdAt).toLocaleDateString("tr-TR")}
               </span>
             </div>
-
             <div className="bg-gray-50 p-4 rounded-xl mb-6">
               <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide">
                 Açıklama
               </h3>
               <p className="text-gray-700 leading-relaxed">{job.description}</p>
             </div>
-
             <div className="space-y-2">
-              {job.answers &&
-                job.answers.map((a, i) => (
-                  <div
-                    key={i}
-                    className="flex justify-between text-sm border-b pb-1 last:border-0 border-gray-100"
-                  >
-                    <span className="text-gray-500">{a.question}</span>
-                    <span className="font-medium text-gray-900">
-                      {a.answer}
-                    </span>
-                  </div>
-                ))}
+              {job.answers?.map((a, i) => (
+                <div
+                  key={i}
+                  className="flex justify-between text-sm border-b pb-1 last:border-0 border-gray-100"
+                >
+                  <span className="text-gray-500">{a.question}</span>
+                  <span className="font-medium text-gray-900">{a.answer}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* SAĞ: TEKLİF FORMU veya DURUM BİLGİSİ */}
-        <div>
+        {/* SAĞ KOLON (Chat ve Form) */}
+        <div className="h-[600px] sticky top-4">
           {myOffer ? (
-            <div className="bg-green-50 p-6 rounded-2xl border border-green-200 text-center animate-in fade-in zoom-in duration-300">
-              <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle size={32} />
-              </div>
-              <h2 className="text-xl font-bold text-green-800 mb-2">
-                Teklif Verildi!
-              </h2>
-
-              <p className="text-green-700 mb-4">
-                Bu iş için teklifini zaten ilettin.
-              </p>
-              {myOffer && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100 flex flex-col items-center">
-                  <p className="text-xs text-blue-600 font-bold uppercase mb-1 tracking-wider">
-                    İlan Sahibi İle İletişime Geç
-                  </p>
+            <div className="bg-white flex flex-col h-full rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+              <div className="p-4 border-b bg-blue-600 text-white flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold">
+                      {job.user?.name[0]}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 bg-green-500 border-2 border-blue-600 w-4 h-4 rounded-full flex items-center justify-center">
+                      <CheckCircle size={10} className="text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm leading-none mb-1">
+                      {job.user?.name}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter">
+                        Teklif Verildi
+                      </span>
+                      <span className="text-[10px] opacity-70 uppercase tracking-widest font-bold">
+                        Müşteri
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
                   <a
                     href={`tel:${job.user?.phone}`}
-                    className="text-lg font-bold text-blue-800 flex items-center gap-2 hover:underline"
+                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition border border-white/10"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
-                    {job.user?.phone || "Telefon belirtilmedi"}
+                    <Phone size={16} />
+                    <span className="text-xs font-bold">
+                      {job.user?.phone || "Numara Yok"}
+                    </span>
                   </a>
                 </div>
-              )}
-              <div className="bg-white p-4 rounded-xl text-left shadow-sm inline-block w-full">
-                <div className="flex justify-between mb-2">
-                  <span className="text-gray-500">Fiyat:</span>
-                  <span className="font-bold">{myOffer.price} ₺</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Süre:</span>
-                  <span className="font-bold">{myOffer.deliveryTime}</span>
-                </div>
-                <div className="mt-2 pt-2 border-t text-sm text-gray-600">
-                  Durum:{" "}
-                  <span
-                    className={`font-bold uppercase ${myOffer.status === "accepted" ? "text-green-600" : "text-yellow-600"}`}
-                  >
-                    {myOffer.status === "pending"
-                      ? "Cevap Bekleniyor"
-                      : myOffer.status === "accepted"
-                        ? "KABUL EDİLDİ"
-                        : myOffer.status}
-                  </span>
-                </div>
               </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                {messages.map((msg, index) => {
+                  const isMe =
+                    (msg.sender?._id || msg.sender) === (user._id || user.id);
+                  return (
+                    <div
+                      key={index}
+                      className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm font-medium shadow-sm ${isMe ? "bg-blue-600 text-white rounded-tr-none" : "bg-white text-gray-800 border border-gray-100 rounded-tl-none"}`}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={scrollRef} />
+              </div>
+
+              <form
+                onSubmit={handleSendMessage}
+                className="p-4 bg-white border-t flex gap-2"
+              >
+                <input
+                  type="text"
+                  placeholder="Mesajınızı yazın..."
+                  className="flex-1 bg-gray-100 border-none rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-100"
+                >
+                  <Send size={20} />
+                </button>
+              </form>
             </div>
           ) : (
-            // FORM BÖLGESİ
-            <div className="relative bg-white p-6 rounded-2xl shadow-lg border border-blue-100 sticky top-4 overflow-hidden">
-              {/* EĞER PAKET YOKSA GÖZÜKECEK OLAN BLUR KATMANI */}
+            <div className="relative bg-white p-6 rounded-2xl shadow-lg border border-blue-100 overflow-hidden">
+              {/* Teklif Formu Alanı (Değişmedi) */}
               {!hasCredits && (
                 <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-white/60 flex flex-col items-center justify-center p-6 text-center transition-all">
                   <div className="w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center text-blue-600 mb-4 border border-blue-50">
@@ -235,10 +296,6 @@ const JobDetail = () => {
                   <h3 className="text-lg font-bold text-gray-900 mb-2">
                     Teklif Verme Kısıtlı
                   </h3>
-                  <p className="text-sm text-gray-600 mb-6 px-4 font-medium">
-                    İlanlara teklif verebilmek için aktif bir paketiniz
-                    olmalıdır.
-                  </p>
                   <Link
                     to="/dashboard/packages"
                     className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 text-sm"
@@ -247,8 +304,6 @@ const JobDetail = () => {
                   </Link>
                 </div>
               )}
-
-              {/* FORM İÇERİĞİ */}
               <div className={!hasCredits ? "opacity-40" : ""}>
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
@@ -263,7 +318,6 @@ const JobDetail = () => {
                     </p>
                   </div>
                 </div>
-
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -273,8 +327,7 @@ const JobDetail = () => {
                       type="number"
                       required
                       disabled={!hasCredits}
-                      placeholder="5000"
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50"
+                      className="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                       value={offerData.price}
                       onChange={(e) =>
                         setOfferData({ ...offerData, price: e.target.value })
@@ -289,8 +342,7 @@ const JobDetail = () => {
                       type="text"
                       required
                       disabled={!hasCredits}
-                      placeholder="3 Gün"
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50"
+                      className="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                       value={offerData.deliveryTime}
                       onChange={(e) =>
                         setOfferData({
@@ -308,8 +360,7 @@ const JobDetail = () => {
                       rows="4"
                       required
                       disabled={!hasCredits}
-                      placeholder="Müşteriye kendinizi tanıtın..."
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none disabled:bg-gray-50"
+                      className="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                       value={offerData.message}
                       onChange={(e) =>
                         setOfferData({ ...offerData, message: e.target.value })
@@ -319,7 +370,7 @@ const JobDetail = () => {
                   <button
                     type="submit"
                     disabled={!hasCredits}
-                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:bg-gray-400 disabled:shadow-none"
+                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200"
                   >
                     Teklifi Gönder
                   </button>

@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import { io } from "socket.io-client";
 import {
   ArrowLeft,
   Calendar,
@@ -11,31 +13,42 @@ import {
   User,
   Star,
   X,
+  MessageCircle,
+  Send,
+  Phone,
 } from "lucide-react";
 import toast from "react-hot-toast";
+
+const socket = io("http://localhost:5000");
 
 const RequestDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const scrollRef = useRef();
+
   const [request, setRequest] = useState(null);
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- PUANLAMA MODALI İÇİN STATE ---
+  // --- CHAT STATE'LERİ ---
+  const [activeChat, setActiveChat] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState(null);
+
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewData, setReviewData] = useState({
     rating: 5,
     title: "",
     text: "",
   });
-  // ----------------------------------
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const reqRes = await api.get(`/requests/${id}`);
         setRequest(reqRes.data.data);
-
         const offerRes = await api.get(`/offers/request/${id}`);
         setOffers(offerRes.data.data);
       } catch (error) {
@@ -46,6 +59,65 @@ const RequestDetail = () => {
     };
     fetchData();
   }, [id]);
+
+  // --- KRİTİK DÜZELTME: ÇİFT MESAJI ENGELLEYEN SOCKET DİNLEYİCİSİ ---
+  useEffect(() => {
+    socket.on("receive_message", (data) => {
+      if (activeChat && data.chatId === activeChat._id) {
+        // Mesajı gönderen kişi BEN DEĞİLSEM listeye ekle (Çift görmeyi engeller)
+        const currentUserId = user?._id || user?.id;
+        const senderId = data.sender?._id || data.sender;
+
+        if (senderId !== currentUserId) {
+          setMessages((prev) => [...prev, data]);
+        }
+      }
+    });
+    return () => socket.off("receive_message");
+  }, [activeChat, user]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleOpenChat = async (provider) => {
+    try {
+      setSelectedProvider(provider);
+      const res = await api.post("/chats", {
+        receiverId: provider._id,
+        requestId: id,
+      });
+      setActiveChat(res.data.data);
+
+      const msgRes = await api.get(`/chats/${res.data.data._id}/messages`);
+      setMessages(msgRes.data.data);
+      socket.emit("join_chat", res.data.data._id);
+    } catch (error) {
+      toast.error("Sohbet başlatılamadı.");
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+
+    const messageData = {
+      chatId: activeChat._id,
+      text: newMessage,
+      sender: user._id || user.id,
+    };
+
+    try {
+      const res = await api.post("/chats/message", messageData);
+      // Socket ile gönder
+      socket.emit("send_message", { ...res.data.data, chatId: activeChat._id });
+      // Kendi listeme ekle (Optimistic update)
+      setMessages((prev) => [...prev, res.data.data]);
+      setNewMessage("");
+    } catch (error) {
+      toast.error("Mesaj gönderilemedi.");
+    }
+  };
 
   const handleAcceptOffer = async (offerId) => {
     if (!window.confirm("Bu teklifi kabul etmek istediğine emin misin?"))
@@ -66,7 +138,6 @@ const RequestDetail = () => {
     }
   };
 
-  // --- PUANLAMA GÖNDERME ---
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     try {
@@ -78,12 +149,11 @@ const RequestDetail = () => {
       });
       toast.success("Yorumunuz kaydedildi ve iş tamamlandı! 🎉");
       setIsReviewModalOpen(false);
-      setRequest((prev) => ({ ...prev, status: "completed" })); // Durumu güncelle
+      setRequest((prev) => ({ ...prev, status: "completed" }));
     } catch (error) {
       toast.error(error.response?.data?.error || "Yorum gönderilemedi.");
     }
   };
-  // -------------------------
 
   if (loading)
     return (
@@ -93,7 +163,6 @@ const RequestDetail = () => {
     );
   if (!request) return null;
 
-  // Yıldız Seçimi İçin Yardımcı
   const renderStars = () => {
     return [1, 2, 3, 4, 5].map((star) => (
       <button
@@ -147,7 +216,6 @@ const RequestDetail = () => {
         >
           <ArrowLeft size={18} className="mr-2" /> Taleplerime Dön
         </button>
-
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
@@ -157,11 +225,8 @@ const RequestDetail = () => {
               Talep No: #{request._id.slice(-6).toUpperCase()}
             </p>
           </div>
-
           <div className="flex items-center gap-3">
             {getStatusBadge(request.status)}
-
-            {/* --- İŞİ TAMAMLA BUTONU --- */}
             {request.status === "in_progress" && (
               <button
                 onClick={() => setIsReviewModalOpen(true)}
@@ -175,96 +240,167 @@ const RequestDetail = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* SOL KOLON */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-lg text-gray-800 mb-4 border-b pb-2">
-              Hizmet Detayları
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-start gap-3">
-                <div className="bg-blue-50 p-3 rounded-lg text-blue-600">
-                  <MapPin size={24} />
+        <div className="lg:col-span-2">
+          {activeChat ? (
+            <div className="bg-white flex flex-col h-[600px] rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in slide-in-from-left duration-300">
+              <div className="p-4 border-b bg-slate-900 text-white flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setActiveChat(null)}
+                    className="p-2 hover:bg-white/10 rounded-full transition"
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-bold text-white">
+                    {selectedProvider?.name[0]}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm">
+                      {selectedProvider?.name}
+                    </h3>
+                    <p className="text-[10px] opacity-70 uppercase font-bold tracking-wider">
+                      Hizmet Veren
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <span className="block text-sm text-gray-500">Konum</span>
-                  <span className="font-semibold text-gray-900">
-                    {request.city} / {request.district}
-                  </span>
+                <a
+                  href={`tel:${selectedProvider?.phone}`}
+                  className="p-2 bg-green-500 rounded-full hover:bg-green-600 transition text-white shadow-lg shadow-green-200"
+                >
+                  <Phone size={18} />
+                </a>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                {messages.map((msg, idx) => {
+                  const isMe =
+                    (msg.sender?._id || msg.sender) === (user._id || user.id);
+                  return (
+                    <div
+                      key={idx}
+                      className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm font-medium shadow-sm ${isMe ? "bg-blue-600 text-white rounded-tr-none" : "bg-white text-gray-800 border border-gray-100 rounded-tl-none"}`}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={scrollRef} />
+              </div>
+              <form
+                onSubmit={handleSendMessage}
+                className="p-4 bg-white border-t flex gap-2"
+              >
+                <input
+                  type="text"
+                  placeholder="Mesajınızı yazın..."
+                  className="flex-1 bg-gray-100 border-none rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-100"
+                >
+                  <Send size={20} />
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="font-bold text-lg text-gray-800 mb-4 border-b pb-2">
+                Hizmet Detayları
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-start gap-3">
+                  <div className="bg-blue-50 p-3 rounded-lg text-blue-600">
+                    <MapPin size={24} />
+                  </div>
+                  <div>
+                    <span className="block text-sm text-gray-500">Konum</span>
+                    <span className="font-semibold text-gray-900">
+                      {request.city} / {request.district}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-blue-50 p-3 rounded-lg text-blue-600">
+                    <Calendar size={24} />
+                  </div>
+                  <div>
+                    <span className="block text-sm text-gray-500">Tarih</span>
+                    <span className="font-semibold text-gray-900">
+                      {new Date(request.createdAt).toLocaleDateString("tr-TR")}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <div className="bg-blue-50 p-3 rounded-lg text-blue-600">
-                  <Calendar size={24} />
-                </div>
-                <div>
-                  <span className="block text-sm text-gray-500">Tarih</span>
-                  <span className="font-semibold text-gray-900">
-                    {new Date(request.createdAt).toLocaleDateString("tr-TR")}
-                  </span>
-                </div>
+              <div className="mt-6">
+                <h4 className="text-sm font-medium text-gray-500 mb-2">
+                  Açıklama
+                </h4>
+                <p className="text-gray-700 bg-gray-50 p-4 rounded-xl leading-relaxed">
+                  {request.description}
+                </p>
               </div>
             </div>
-            <div className="mt-6">
-              <h4 className="text-sm font-medium text-gray-500 mb-2">
-                Açıklama
-              </h4>
-              <p className="text-gray-700 bg-gray-50 p-4 rounded-xl leading-relaxed">
-                {request.description}
-              </p>
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* SAĞ KOLON: Teklif Listesi */}
-        <div className="lg:col-span-1">
-          <div className="bg-blue-600 text-white p-6 rounded-2xl shadow-lg shadow-blue-200 mb-6">
+        <div className="lg:col-span-1 space-y-4">
+          <div className="bg-blue-600 text-white p-6 rounded-2xl shadow-lg shadow-blue-200">
             <h3 className="text-xl font-bold mb-2">Gelen Teklifler</h3>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2">
               <span className="text-4xl font-bold">{offers.length}</span>
-              <span className="opacity-80">Teklif var</span>
+              <span className="opacity-80 font-medium text-sm">
+                kişi teklif verdi
+              </span>
             </div>
           </div>
-
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
             {offers.map((offer) => (
               <div
                 key={offer._id}
-                className={`bg-white p-5 rounded-xl border-2 transition-all ${offer.status === "accepted" ? "border-green-500 ring-2 ring-green-100" : "border-gray-100"}`}
+                className={`bg-white p-5 rounded-xl border-2 transition-all ${offer.status === "accepted" ? "border-green-500 ring-2 ring-green-100" : "border-gray-100 hover:border-blue-200"}`}
               >
                 <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-600">
-                      <User size={14} />
+                  <div
+                    className="flex items-center gap-2 cursor-pointer"
+                    onClick={() => handleOpenChat(offer.provider)}
+                  >
+                    <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 border border-blue-100 font-bold">
+                      {offer.provider?.name[0]}
                     </div>
                     <div>
-                      <h4 className="font-bold text-gray-900 text-sm">
+                      <h4 className="font-bold text-gray-900 text-sm hover:text-blue-600 transition underline underline-offset-4 decoration-blue-200">
                         {offer.provider?.name}
                       </h4>
+                      <span className="text-[10px] text-blue-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                        <MessageCircle size={10} /> Sohbet Et
+                      </span>
                     </div>
                   </div>
                   <span className="font-bold text-lg text-blue-600">
                     {offer.price} ₺
                   </span>
                 </div>
-                <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700 mb-3">
+                <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700 mb-3 italic">
                   "{offer.message}"
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded">
+                  <span className="text-xs text-gray-500 font-medium">
                     ⏱ {offer.deliveryTime}
                   </span>
-
-                  {/* Kabul Et Butonu Sadece Bekleyen İşlerde Çıkar */}
                   {request.status === "active" && (
                     <button
                       onClick={() => handleAcceptOffer(offer._id)}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition"
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 shadow-sm transition"
                     >
                       Kabul Et
                     </button>
                   )}
-
                   {offer.status === "accepted" && (
                     <span className="text-green-600 font-bold text-sm flex items-center gap-1">
                       <CheckCircle size={16} /> KABUL EDİLDİ
@@ -277,7 +413,6 @@ const RequestDetail = () => {
         </div>
       </div>
 
-      {/* --- PUANLAMA MODALI (Pop-up) --- */}
       {isReviewModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
@@ -290,7 +425,6 @@ const RequestDetail = () => {
                 <X size={20} />
               </button>
             </div>
-
             <form onSubmit={handleSubmitReview} className="p-6 space-y-4">
               <div className="text-center">
                 <p className="text-gray-600 mb-2">
@@ -300,7 +434,6 @@ const RequestDetail = () => {
                   {renderStars()}
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Başlık
@@ -310,7 +443,7 @@ const RequestDetail = () => {
                   required
                   maxLength="50"
                   placeholder="Örn: Harika işçilik!"
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                   value={reviewData.title}
                   onChange={(e) =>
                     setReviewData({ ...reviewData, title: e.target.value })
@@ -325,14 +458,13 @@ const RequestDetail = () => {
                   rows="3"
                   required
                   placeholder="Deneyiminizden bahsedin..."
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   value={reviewData.text}
                   onChange={(e) =>
                     setReviewData({ ...reviewData, text: e.target.value })
                   }
                 ></textarea>
               </div>
-
               <button
                 type="submit"
                 className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition"
