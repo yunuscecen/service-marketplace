@@ -31,7 +31,6 @@ const RequestDetail = () => {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- CHAT STATE'LERİ ---
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -60,20 +59,56 @@ const RequestDetail = () => {
     fetchData();
   }, [id]);
 
-  // --- KRİTİK DÜZELTME: ÇİFT MESAJI ENGELLEYEN SOCKET DİNLEYİCİSİ ---
+  // --- ANLIK BİLDİRİM VE MESAJ DİNLEYİCİSİ ---
   useEffect(() => {
-    socket.on("receive_message", (data) => {
-      if (activeChat && data.chatId === activeChat._id) {
-        // Mesajı gönderen kişi BEN DEĞİLSEM listeye ekle (Çift görmeyi engeller)
-        const currentUserId = user?._id || user?.id;
-        const senderId = data.sender?._id || data.sender;
+    if (user) {
+      socket.emit("setup", user._id || user.id);
+    }
 
-        if (senderId !== currentUserId) {
+    const handleNewMessage = (data) => {
+      const currentUserId = user?._id || user?.id;
+      const senderId = data.sender?._id || data.sender;
+
+      if (senderId !== currentUserId) {
+        // 1. Eğer o sohbet şu an açıksa mesajı ekrana bas
+        if (activeChat && data.chatId === activeChat._id) {
           setMessages((prev) => [...prev, data]);
         }
+
+        // 2. HER DURUMDA: Teklif listesinde o kişinin sayısını anlık artır
+        setOffers((prevOffers) =>
+          prevOffers.map((o) => {
+            const providerId = o.provider?._id || o.provider;
+            const isThisProvider =
+              providerId.toString() === senderId.toString();
+            // Eğer sohbet açık değilse veya başka birinin sohbeti açıksa sayıyı artır
+            if (
+              isThisProvider &&
+              (!activeChat || data.chatId !== activeChat._id)
+            ) {
+              return { ...o, unreadCount: (o.unreadCount || 0) + 1 };
+            }
+            return o;
+          }),
+        );
+
+        // 3. HER DURUMDA: Üstteki ana ilan başlığındaki toplam sayıyı artır
+        if (!activeChat || data.chatId !== activeChat._id) {
+          setRequest((prev) => ({
+            ...prev,
+            unreadCount: (prev.unreadCount || 0) + 1,
+          }));
+        }
       }
-    });
-    return () => socket.off("receive_message");
+    };
+
+    socket.on("receive_message", handleNewMessage);
+    socket.on("new_notification", handleNewMessage); // Genel bildirim için
+
+    return () => {
+      socket.off("receive_message", handleNewMessage);
+      socket.off("new_notification", handleNewMessage);
+    };
   }, [activeChat, user]);
 
   useEffect(() => {
@@ -91,6 +126,25 @@ const RequestDetail = () => {
 
       const msgRes = await api.get(`/chats/${res.data.data._id}/messages`);
       setMessages(msgRes.data.data);
+
+      // Sohbet açıldığında unreadCount'u hem tekliften hem de ana başlıktan düşür
+      const currentUnread =
+        offers.find((o) => (o.provider?._id || o.provider) === provider._id)
+          ?.unreadCount || 0;
+
+      setOffers((prev) =>
+        prev.map((o) =>
+          (o.provider?._id || o.provider) === provider._id
+            ? { ...o, unreadCount: 0 }
+            : o,
+        ),
+      );
+
+      setRequest((prev) => ({
+        ...prev,
+        unreadCount: Math.max(0, (prev.unreadCount || 0) - currentUnread),
+      }));
+
       socket.emit("join_chat", res.data.data._id);
     } catch (error) {
       toast.error("Sohbet başlatılamadı.");
@@ -105,13 +159,13 @@ const RequestDetail = () => {
       chatId: activeChat._id,
       text: newMessage,
       sender: user._id || user.id,
+      receiverId: selectedProvider?._id, // ALICI ID'Sİ EKLENDİ
+      requestId: id, // İLAN ID'Sİ EKLENDİ
     };
 
     try {
       const res = await api.post("/chats/message", messageData);
-      // Socket ile gönder
-      socket.emit("send_message", { ...res.data.data, chatId: activeChat._id });
-      // Kendi listeme ekle (Optimistic update)
+      socket.emit("send_message", { ...res.data.data, ...messageData });
       setMessages((prev) => [...prev, res.data.data]);
       setNewMessage("");
     } catch (error) {
@@ -162,19 +216,6 @@ const RequestDetail = () => {
       </DashboardLayout>
     );
   if (!request) return null;
-
-  const renderStars = () => {
-    return [1, 2, 3, 4, 5].map((star) => (
-      <button
-        key={star}
-        type="button"
-        onClick={() => setReviewData({ ...reviewData, rating: star })}
-        className={`text-2xl transition ${star <= reviewData.rating ? "text-yellow-400" : "text-gray-300"}`}
-      >
-        <Star fill={star <= reviewData.rating ? "currentColor" : "none"} />
-      </button>
-    ));
-  };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -227,13 +268,14 @@ const RequestDetail = () => {
           </div>
           <div className="flex items-center gap-3">
             {getStatusBadge(request.status)}
-            {request.status === "in_progress" && (
-              <button
-                onClick={() => setIsReviewModalOpen(true)}
-                className="bg-green-600 text-white px-6 py-2 rounded-full font-bold shadow-lg shadow-green-200 hover:bg-green-700 transition animate-pulse"
-              >
-                ✓ İşi Tamamla & Puanla
-              </button>
+            {/* BAŞLIKTAKİ TOPLAM BİLDİRİM */}
+            {request.unreadCount > 0 && (
+              <div className="flex items-center justify-center relative -ml-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full border border-white">
+                  {request.unreadCount} Yeni Mesaj
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -370,8 +412,18 @@ const RequestDetail = () => {
                     className="flex items-center gap-2 cursor-pointer"
                     onClick={() => handleOpenChat(offer.provider)}
                   >
-                    <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 border border-blue-100 font-bold">
-                      {offer.provider?.name[0]}
+                    <div className="relative">
+                      <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 border border-blue-100 font-bold">
+                        {offer.provider?.name[0]}
+                      </div>
+                      {offer.unreadCount > 0 && (
+                        <div className="absolute -top-1 -right-1 flex items-center justify-center">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border border-white">
+                            {offer.unreadCount}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <h4 className="font-bold text-gray-900 text-sm hover:text-blue-600 transition underline underline-offset-4 decoration-blue-200">
@@ -412,69 +464,6 @@ const RequestDetail = () => {
           </div>
         </div>
       </div>
-
-      {isReviewModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
-            <div className="bg-blue-600 p-4 flex justify-between items-center text-white">
-              <h3 className="font-bold text-lg">Hizmeti Değerlendir</h3>
-              <button
-                onClick={() => setIsReviewModalOpen(false)}
-                className="hover:bg-blue-700 p-1 rounded"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleSubmitReview} className="p-6 space-y-4">
-              <div className="text-center">
-                <p className="text-gray-600 mb-2">
-                  Hizmetten ne kadar memnun kaldın?
-                </p>
-                <div className="flex justify-center gap-2 mb-4">
-                  {renderStars()}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Başlık
-                </label>
-                <input
-                  type="text"
-                  required
-                  maxLength="50"
-                  placeholder="Örn: Harika işçilik!"
-                  className="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                  value={reviewData.title}
-                  onChange={(e) =>
-                    setReviewData({ ...reviewData, title: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Yorumunuz
-                </label>
-                <textarea
-                  rows="3"
-                  required
-                  placeholder="Deneyiminizden bahsedin..."
-                  className="w-full p-3 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  value={reviewData.text}
-                  onChange={(e) =>
-                    setReviewData({ ...reviewData, text: e.target.value })
-                  }
-                ></textarea>
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition"
-              >
-                Gönder ve Tamamla
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </DashboardLayout>
   );
 };

@@ -1,8 +1,9 @@
-// src/pages/dashboard/MyOffers.jsx
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext"; // AuthContext eklendi
+import { io } from "socket.io-client"; // Socket eklendi
 import {
   Calendar,
   MapPin,
@@ -10,13 +11,16 @@ import {
   XCircle,
   Clock,
   ArrowRight,
-  Filter,
 } from "lucide-react";
 
+// Socket sunucu adresi
+const socket = io("http://localhost:5000");
+
 const MyOffers = () => {
+  const { user } = useAuth(); // Kullanıcı bilgisi için
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // Filtreleme için yeni state
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     const fetchOffers = async () => {
@@ -32,7 +36,42 @@ const MyOffers = () => {
     fetchOffers();
   }, []);
 
-  // Filtreleme mantığı
+  // --- ANLIK BİLDİRİM DİNLEYİCİSİ (TASARIMI BOZMAYAN GÜNCELLEME) ---
+  useEffect(() => {
+    if (user) {
+      // Sunucuya bu kullanıcının bildirimleri alması gerektiğini bildiriyoruz
+      socket.emit("setup", user._id || user.id);
+    }
+
+    const handleNewNotification = (data) => {
+      const currentUserId = user?._id || user?.id;
+      const senderId = data.sender?._id || data.sender;
+
+      if (senderId !== currentUserId) {
+        setOffers((prevOffers) =>
+          prevOffers.map((offer) => {
+            // EĞER gelen mesajın chatId'si veya requestId'si bu teklifle eşleşiyorsa sayıyı artır
+            if (
+              offer.chatId === data.chatId ||
+              offer.request?._id === data.requestId
+            ) {
+              return { ...offer, unreadCount: (offer.unreadCount || 0) + 1 };
+            }
+            return offer;
+          }),
+        );
+      }
+    };
+
+    socket.on("receive_message", handleNewNotification);
+    socket.on("new_notification", handleNewNotification);
+
+    return () => {
+      socket.off("receive_message", handleNewNotification);
+      socket.off("new_notification", handleNewNotification);
+    };
+  }, [user]);
+
   const filteredOffers = offers.filter((offer) => {
     if (filter === "all") return true;
     if (filter === "accepted") return offer.status === "accepted";
@@ -56,8 +95,8 @@ const MyOffers = () => {
         );
       default:
         return (
-          <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-            <Clock size={14} /> Cevap Bekleniyor
+          <span className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-sm font-bold flex items-center w-max gap-2">
+            <Clock size={16} /> Cevap Bekleniyor
           </span>
         );
     }
@@ -73,7 +112,6 @@ const MyOffers = () => {
           </p>
         </div>
 
-        {/* Filtreleme Butonları */}
         <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200 self-start">
           <button
             onClick={() => setFilter("all")}
@@ -97,7 +135,7 @@ const MyOffers = () => {
       </div>
 
       {loading ? (
-        <div>Yükleniyor...</div>
+        <div className="p-10 text-center">Yükleniyor...</div>
       ) : filteredOffers.length > 0 ? (
         <div className="grid gap-4">
           {filteredOffers.map((offer) => (
@@ -106,13 +144,23 @@ const MyOffers = () => {
               className={`bg-white p-6 rounded-xl border-l-4 shadow-sm hover:shadow-md transition-all ${offer.status === "accepted" ? "border-l-green-500" : offer.status === "rejected" ? "border-l-red-400" : "border-l-yellow-400"}`}
             >
               <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                {/* Sol: İlan Bilgisi */}
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-bold text-lg text-gray-900">
                       {offer.request?.service?.name || "Hizmet"}
                     </h3>
-                    {getStatusBadge(offer.status)}
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(offer.status)}
+                      {/* OKUNMAMIŞ MESAJ SAYISI */}
+                      {offer.unreadCount > 0 && (
+                        <div className="flex items-center justify-center relative">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-lg border border-white">
+                            {offer.unreadCount}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -139,7 +187,6 @@ const MyOffers = () => {
                   </div>
                 </div>
 
-                {/* Sağ: Aksiyon */}
                 <div>
                   <Link
                     to={`/dashboard/job/${offer.request?._id}`}
@@ -150,16 +197,12 @@ const MyOffers = () => {
                 </div>
               </div>
 
-              {/* Eğer KABUL edildiyse Müşteri Mesajı veya Bilgilendirme */}
               {offer.status === "accepted" && (
                 <div className="mt-4 bg-green-50 p-3 rounded-lg text-sm text-green-800 border border-green-200 flex items-start gap-2">
                   <CheckCircle className="shrink-0 mt-0.5" size={16} />
                   <div>
                     <strong>Tebrikler! Teklifiniz kabul edildi.</strong>
-                    <p>
-                      Müşteri ile iletişime geçip işe başlayabilirsiniz. İş
-                      tamamlandığında müşteri onayı ile ücretinizi alacaksınız.
-                    </p>
+                    <p>Müşteri ile iletişime geçip işe başlayabilirsiniz.</p>
                   </div>
                 </div>
               )}
