@@ -1,17 +1,28 @@
 // backend/routes/service.js
 const express = require("express");
-const { getServices, createService } = require("../controllers/service");
+const {
+  getServices,
+  createService,
+  getService,
+  updateService, // <-- Eklendi
+  deleteService, // <-- Eklendi
+} = require("../controllers/service");
 
-// Middleware'leri çağır
 const { protect, authorize } = require("../middlewares/auth");
 
 const router = express.Router();
 
-// '/' rotası (yani /api/v1/services)
+// Herkes okuyabilir, sadece Admin ekleyebilir
 router
   .route("/")
-  .get(getServices) // GET isteği herkese açık
+  .get(getServices)
   .post(protect, authorize("admin"), createService);
-// POST isteği için önce giriş yapmalı (protect), SONRA rolü 'admin' olmalı
+
+// ID işlemleri
+router
+  .route("/:id")
+  .get(getService)
+  .put(protect, authorize("admin"), updateService) // <-- Güncelleme Rotası
+  .delete(protect, authorize("admin"), deleteService); // <-- Silme Rotası
 
 module.exports = router;

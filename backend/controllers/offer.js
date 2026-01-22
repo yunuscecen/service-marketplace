@@ -1,7 +1,7 @@
 // backend/controllers/offer.js
 const Offer = require("../models/Offer");
 const ServiceRequest = require("../models/ServiceRequest");
-
+const User = require("../models/User");
 // @desc    İlana Teklif Ver
 // @route   POST /api/v1/offers
 // @access  Private (Sadece Provider)
@@ -9,13 +9,20 @@ exports.createOffer = async (req, res, next) => {
   try {
     const { requestId, price, deliveryTime, message } = req.body;
 
-    // 1. İlan var mı kontrol et
+    // --- YENİ: TEKLİF HAKKI KONTROLÜ ---
+    const providerUser = await User.findById(req.user.id);
+    if (providerUser.offerLimit <= 0) {
+      return res.status(403).json({
+        success: false,
+        error: "Teklif hakkınız kalmamıştır. Lütfen paket satın alın.",
+      });
+    }
+
     const request = await ServiceRequest.findById(requestId);
     if (!request) {
       return res.status(404).json({ success: false, error: "İlan bulunamadı" });
     }
 
-    // 2. Kendi ilanına teklif veremezsin
     if (request.user.toString() === req.user.id) {
       return res.status(400).json({
         success: false,
@@ -23,19 +30,16 @@ exports.createOffer = async (req, res, next) => {
       });
     }
 
-    // 3. Daha önce teklif vermiş mi? (Modeldeki index de korur ama burada da bakalım)
     const existingOffer = await Offer.findOne({
       provider: req.user.id,
       request: requestId,
     });
-
     if (existingOffer) {
       return res
         .status(400)
         .json({ success: false, error: "Bu ilana zaten teklif verdiniz." });
     }
 
-    // 4. Teklifi Oluştur
     const offer = await Offer.create({
       provider: req.user.id,
       request: requestId,
@@ -44,21 +48,35 @@ exports.createOffer = async (req, res, next) => {
       message,
     });
 
-    res.status(201).json({
-      success: true,
-      data: offer,
-    });
+    // --- YENİ: HAKKI 1 AZALT ---
+    providerUser.offerLimit -= 1;
+    await providerUser.save({ validateBeforeSave: false });
+
+    res.status(201).json({ success: true, data: offer });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
 };
 
-// @desc    Bir İlana Gelen Teklifleri Getir (Müşteri İçin)
-// @route   GET /api/v1/offers/request/:requestId
-// @access  Private (İlan Sahibi Görebilir)
 exports.getOffersForRequest = async (req, res, next) => {
   try {
-    const offers = await Offer.find({ request: req.params.requestId })
+    // 1. Önce ilanı bulup sahibini kontrol edelim
+    const serviceRequest = await ServiceRequest.findById(req.params.requestId);
+    if (!serviceRequest) {
+      return res.status(404).json({ success: false, error: "İlan bulunamadı" });
+    }
+
+    // 2. Filtre Hazırla
+    let filter = { request: req.params.requestId };
+
+    // --- KRİTİK MANTIK ---
+    // Eğer isteği atan kişi, ilanın sahibi DEĞİLSE (yani bir Hizmet Veren ise),
+    // sadece KENDİ verdiği teklifi görebilsin. Başkalarının teklifini görmesin.
+    if (serviceRequest.user.toString() !== req.user.id) {
+      filter.provider = req.user.id;
+    }
+
+    const offers = await Offer.find(filter)
       .populate("provider", "name email") // Teklif verenin adını getir
       .sort("-createdAt");
 
@@ -129,6 +147,34 @@ exports.acceptOffer = async (req, res, next) => {
       data: offer,
       message:
         "Teklif kabul edildi, diğer teklifler reddedildi ve iş süreci başladı.",
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+// backend/controllers/offer.js EN ALTA EKLE:
+
+// @desc    Hizmet Verenin Kendi Verdiği Teklifleri Getir
+// @route   GET /api/v1/offers/my-offers
+// @access  Private (Provider)
+exports.getMyOffers = async (req, res, next) => {
+  try {
+    const offers = await Offer.find({ provider: req.user.id })
+      .populate({
+        path: "request", // Hangi işe teklif verilmiş?
+        select: "status city district createdAt",
+        populate: {
+          path: "service", // O işin hizmet adı ne?
+          select: "name",
+        },
+      })
+      .sort("-createdAt"); // En yeni en üstte
+
+    res.status(200).json({
+      success: true,
+      count: offers.length,
+      data: offers,
     });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });

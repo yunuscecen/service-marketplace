@@ -11,6 +11,7 @@ const connectDB = require("./config/db");
 const auth = require("./routes/auth");
 const services = require("./routes/service");
 const serviceRequests = require("./routes/serviceRequest");
+const adminRoutes = require("./routes/admin");
 const offers = require("./routes/offer");
 const reviews = require("./routes/review");
 
@@ -45,6 +46,7 @@ app.use("/api/v1/services", services);
 app.use("/api/v1/requests", serviceRequests);
 app.use("/api/v1/offers", offers);
 app.use("/api/v1/reviews", reviews);
+app.use("/api/v1/admin", adminRoutes);
 // Test Rotası
 app.get("/", (req, res) => {
   res.send("API Çalışıyor... Hizmet Uygulaması Backend");

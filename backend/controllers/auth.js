@@ -4,19 +4,19 @@ const User = require("../models/User");
 // @desc    Kullanıcı Kaydı (Register)
 // @route   POST /api/v1/auth/register
 // @access  Public
+// backend/controllers/auth.js
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, phone } = req.body; // phone eklendi
 
-    // Kullanıcıyı oluştur
     const user = await User.create({
       name,
       email,
       password,
-      role, // Normalde role dışarıdan alınmaz, güvenlik açığıdır ama şimdilik test için açıyoruz.
+      role,
+      phone, // phone eklendi
     });
 
-    // Token oluştur ve gönder
     sendTokenResponse(user, 200, res);
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
@@ -26,18 +26,18 @@ exports.register = async (req, res, next) => {
 // @desc    Kullanıcı Girişi (Login)
 // @route   POST /api/v1/auth/login
 // @access  Public
+// backend/controllers/auth.js
+
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Email ve şifre girildi mi kontrol et
     if (!email || !password) {
       return res
         .status(400)
         .json({ success: false, error: "Lütfen email ve şifre giriniz" });
     }
 
-    // Kullanıcıyı bul (Şifreyi de getir - çünkü modelde select:false yapmıştık)
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
@@ -46,7 +46,15 @@ exports.login = async (req, res, next) => {
         .json({ success: false, error: "Geçersiz kimlik bilgileri" });
     }
 
-    // Şifre eşleşiyor mu kontrol et
+    // --- BURAYI EKLE: Askıya alınmış mı kontrol et ---
+    if (user.isSuspended) {
+      return res.status(401).json({
+        success: false,
+        error: "Hesabınız askıya alınmıştır. Lütfen destekle iletişime geçin.",
+      });
+    }
+    // ------------------------------------------------
+
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
@@ -84,4 +92,16 @@ const sendTokenResponse = (user, statusCode, res) => {
       role: user.role,
     },
   });
+};
+exports.addCredits = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    // Mevcut kredisine yenisini ekle
+    user.offerLimit += req.body.credits;
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    res.status(400).json({ success: false });
+  }
 };
