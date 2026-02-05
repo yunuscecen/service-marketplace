@@ -21,7 +21,7 @@ const Navbar = () => {
         {/* 1. LOGO */}
         <Link to="/" className="flex items-center gap-2 group">
           <div className="text-2xl font-semibold tracking-tighter text-black group-hover:opacity-70 transition-opacity">
-            DIM<span className="text-gray-400">.</span>
+            firsatis.com<span className="text-gray-400">.</span>
           </div>
         </Link>
 

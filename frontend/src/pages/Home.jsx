@@ -287,7 +287,7 @@ const Home = () => {
       {/* --- FOOTER --- */}
       <footer className="max-w-7xl mx-auto py-24 px-6 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-12">
         <div className="text-3xl font-black tracking-tighter uppercase text-slate-900 italic-none">
-          Service<span className="text-[#c9ff2a]">.</span>hub
+          firsatis.com
         </div>
         <div className="flex gap-12 text-[11px] font-black uppercase tracking-widest text-slate-400">
           <Link to="/" className="hover:text-black">
