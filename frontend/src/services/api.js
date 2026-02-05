@@ -8,7 +8,7 @@ const api = axios.create({
   },
   withCredentials: true,
 });
-
+// test
 // Her isteğe otomatik Token ekleyen "Interceptor"
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
