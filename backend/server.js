@@ -21,12 +21,12 @@ connectDB();
 
 const app = express();
 const server = http.createServer(app);
-
 const allowedOrigins = [
-  "http://localhost:5173", // Local gelişim için (Vite kullanıyorsan)
-  "https://service-marketplace-sogk.onrender.com", // Vercel deploy linkin (buraya kendi linkini yapıştır)
+  "http://localhost:5173",
+  "https://service-marketplace-umber.vercel.app", // DOĞRU: Frontend (Vercel) linkin
 ];
 
+// Socket CORS ayarı
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -41,7 +41,11 @@ const io = new Server(server, {
 //   },
 // });
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false, // CORS sorunlarını azaltmak için
+  }),
+);
 app.use(
   cors({
     origin: allowedOrigins,
