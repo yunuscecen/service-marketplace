@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async"; // SEO İçin Eklendi
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import {
   MapPin,
-  Calendar,
   FileText,
   ArrowLeft,
-  ArrowRight,
   CheckCircle,
   ChevronRight,
   HelpCircle,
@@ -18,17 +17,12 @@ const CreateRequest = () => {
   const { serviceId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const topRef = useRef(null); // Sayfa geçişlerinde yukarı kaydırma için
 
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Hangi adımdayız?
   const [step, setStep] = useState(0);
-
-  // Dinamik Cevaplar (Özel Sorular İçin)
   const [dynamicAnswers, setDynamicAnswers] = useState({});
-
-  // Standart Form Verileri
   const [formData, setFormData] = useState({
     city: "",
     district: "",
@@ -52,18 +46,28 @@ const CreateRequest = () => {
 
     if (user) fetchService();
     else {
-      toast.error("Giriş yapmalısınız.");
+      toast.error("İlan oluşturmak için giriş yapmalısınız.");
       navigate("/login");
     }
   }, [serviceId, user, navigate]);
 
-  // TOPLAM ADIM SAYISI
   const questionCount = service?.questions?.length || 0;
   const totalSteps = questionCount + 3;
 
-  // Sonraki Adıma Geç
+  // Her adım değişiminde sayfayı yukarı kaydır (UX)
+  useEffect(() => {
+    topRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [step]);
+
+  // Klavye ile "Enter" kontrolü
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
+      e.preventDefault();
+      nextStep();
+    }
+  };
+
   const nextStep = () => {
-    // 1. Dinamik Soruların Kontrolü
     if (step < questionCount) {
       const currentQuestion = service.questions[step];
       const answer = dynamicAnswers[currentQuestion.questionText];
@@ -77,7 +81,6 @@ const CreateRequest = () => {
       }
     }
 
-    // 2. Standart Alanların Kontrolü
     if (
       step === questionCount &&
       (!formData.city || !formData.district || !formData.datePreference)
@@ -93,7 +96,6 @@ const CreateRequest = () => {
 
   const prevStep = () => setStep((prev) => prev - 1);
 
-  // Dinamik Cevap Güncelleme
   const handleDynamicChange = (questionText, value, type) => {
     if (type === "checkbox") {
       const existing = dynamicAnswers[questionText] || [];
@@ -109,7 +111,6 @@ const CreateRequest = () => {
         });
       }
     } else {
-      // Radio, Select, Text, Number
       setDynamicAnswers({
         ...dynamicAnswers,
         [questionText]: value,
@@ -117,7 +118,6 @@ const CreateRequest = () => {
     }
   };
 
-  // Formu Gönder
   const handleSubmit = async () => {
     const formattedAnswers = Object.entries(dynamicAnswers).map(([q, a]) => ({
       question: q,
@@ -139,8 +139,8 @@ const CreateRequest = () => {
 
     try {
       await api.post("/requests", requestPayload);
-      toast.success("Talebiniz başarıyla oluşturuldu!");
-      navigate("/");
+      toast.success("Talebiniz başarıyla oluşturuldu! Uzmanlar inceliyor.");
+      navigate("/dashboard"); // Kullanıcıyı paneline yönlendirmek daha mantıklı
     } catch (error) {
       toast.error(error.response?.data?.error || "Bir hata oluştu.");
     }
@@ -148,50 +148,87 @@ const CreateRequest = () => {
 
   if (loading)
     return (
-      <div className="h-screen flex items-center justify-center">
-        Yükleniyor...
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 space-y-4">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-gray-500 font-medium animate-pulse">
+          Sihirbaz hazırlanıyor...
+        </p>
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-10 px-4">
-      {/* Progress Bar */}
-      <div className="w-full max-w-2xl mb-8">
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+    <main className="min-h-screen bg-gray-50 flex flex-col items-center pt-10 px-4 pb-20">
+      <div ref={topRef} />
+
+      {/* --- SEO & META TAGS --- */}
+      <Helmet>
+        <title>
+          {service ? `${service.name} İlanı Oluştur` : "Hizmet İlanı Oluştur"} |
+          Fırsatİş
+        </title>
+        <meta
+          name="description"
+          content={
+            service
+              ? `${service.name} projeniz için detayları belirleyin, uzmanlardan hızlıca teklif alın.`
+              : "Projeniz için uzmanlardan teklif alın."
+          }
+        />
+        <meta name="robots" content="noindex, follow" />{" "}
+        {/* Form adımlarının indexlenmesini istemeyiz, ama linkleri takip etsin */}
+      </Helmet>
+
+      {/* Progress Bar (Erişilebilir) */}
+      <div
+        className="w-full max-w-2xl mb-8"
+        role="progressbar"
+        aria-valuenow={((step + 1) / (totalSteps + 1)) * 100}
+        aria-valuemin="0"
+        aria-valuemax="100"
+      >
+        <div className="flex justify-between text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
+          <span>Başlangıç</span>
+          <span>Tamamlanıyor</span>
+        </div>
+        <div className="h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
           <div
-            className="h-full bg-blue-600 transition-all duration-500 ease-out"
+            className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out rounded-full"
             style={{ width: `${((step + 1) / (totalSteps + 1)) * 100}%` }}
           ></div>
         </div>
-        <p className="text-center text-xs text-gray-500 mt-2 font-medium">
-          ADIM {step + 1} / {totalSteps + 1}
+        <p className="text-right text-xs text-gray-400 mt-2 font-medium">
+          Adım {step + 1} / {totalSteps + 1}
         </p>
       </div>
 
-      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden min-h-[450px] flex flex-col">
-        {/* Başlık */}
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] overflow-hidden min-h-[500px] flex flex-col border border-gray-100">
+        {/* Header */}
+        <header className="p-8 border-b border-gray-50 flex items-center justify-between bg-white">
           <div>
-            <h2 className="text-xl font-bold text-gray-800">{service?.name}</h2>
-            <p className="text-sm text-gray-500">
-              {step < questionCount ? "Detayları Belirle" : "Son Adımlar"}
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+              {service?.name}
+            </h1>
+            <p className="text-sm text-gray-500 font-medium mt-1">
+              {step < questionCount
+                ? "Proje detaylarını belirleyelim"
+                : "Son birkaç detay kaldı"}
             </p>
           </div>
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+          <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm">
             {step < questionCount ? (
-              <HelpCircle size={20} />
+              <HelpCircle size={24} strokeWidth={1.5} />
             ) : step === questionCount ? (
-              <MapPin size={20} />
+              <MapPin size={24} strokeWidth={1.5} />
             ) : step === questionCount + 1 ? (
-              <FileText size={20} />
+              <FileText size={24} strokeWidth={1.5} />
             ) : (
-              <CheckCircle size={20} />
+              <CheckCircle size={24} strokeWidth={1.5} />
             )}
           </div>
-        </div>
+        </header>
 
         {/* --- İÇERİK ALANI --- */}
-        <div className="p-8 flex-1 flex flex-col justify-center animate-in fade-in slide-in-from-right-4 duration-300">
+        <div className="p-8 md:p-10 flex-1 flex flex-col justify-center animate-in fade-in slide-in-from-right-8 duration-500">
           {/* 1. DİNAMİK SORULAR */}
           {step < questionCount &&
             (() => {
@@ -199,127 +236,134 @@ const CreateRequest = () => {
               const currentAns = dynamicAnswers[q.questionText];
 
               return (
-                <div className="space-y-6">
-                  <h3 className="text-2xl font-bold text-gray-900">
+                <fieldset className="space-y-8">
+                  <legend className="text-3xl font-bold text-gray-900 leading-tight block mb-4">
                     {q.questionText}
-                  </h3>
+                  </legend>
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {/* SELECT */}
                     {q.inputType === "select" && (
-                      <select
-                        className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg bg-white"
-                        onChange={(e) =>
-                          handleDynamicChange(
-                            q.questionText,
-                            e.target.value,
-                            "select",
-                          )
-                        }
-                        value={currentAns || ""}
-                      >
-                        <option value="">Seçiniz...</option>
-                        {q.options.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          id={`question-${step}`}
+                          className="w-full p-5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none text-lg appearance-none cursor-pointer transition-all hover:bg-white"
+                          onChange={(e) =>
+                            handleDynamicChange(
+                              q.questionText,
+                              e.target.value,
+                              "select",
+                            )
+                          }
+                          value={currentAns || ""}
+                        >
+                          <option value="">Seçiniz...</option>
+                          {q.options.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                          <ChevronRight className="rotate-90" />
+                        </div>
+                      </div>
                     )}
 
-                    {/* RADIO */}
+                    {/* RADIO BUTTONS (SEMANTİK) */}
                     {q.inputType === "radio" &&
-                      q.options.map((opt) => (
-                        <button
+                      q.options.map((opt, idx) => (
+                        <label
                           key={opt}
-                          onClick={() =>
-                            handleDynamicChange(q.questionText, opt, "radio")
-                          }
-                          className={`w-full p-4 rounded-xl border-2 text-left text-lg font-medium transition-all flex items-center justify-between group ${
+                          htmlFor={`opt-${idx}`}
+                          className={`w-full p-5 rounded-2xl border-2 text-left text-lg font-medium transition-all flex items-center justify-between group cursor-pointer ${
                             currentAns === opt
-                              ? "border-blue-600 bg-blue-50 text-blue-700"
-                              : "border-gray-100 hover:border-blue-300 hover:bg-gray-50"
+                              ? "border-blue-600 bg-blue-50/50 text-blue-800 shadow-sm"
+                              : "border-gray-100 hover:border-blue-200 hover:bg-gray-50 text-gray-600"
                           }`}
                         >
-                          {opt}
-                          {currentAns === opt && (
-                            <CheckCircle className="text-blue-600" />
-                          )}
-                        </button>
+                          <div className="flex items-center gap-4">
+                            <input
+                              type="radio"
+                              name={q.questionText}
+                              id={`opt-${idx}`}
+                              value={opt}
+                              checked={currentAns === opt}
+                              onChange={() =>
+                                handleDynamicChange(
+                                  q.questionText,
+                                  opt,
+                                  "radio",
+                                )
+                              }
+                              className="w-5 h-5 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            {opt}
+                          </div>
+                        </label>
                       ))}
 
-                    {/* CHECKBOX */}
+                    {/* CHECKBOX (SEMANTİK) */}
                     {q.inputType === "checkbox" &&
-                      q.options.map((opt) => {
+                      q.options.map((opt, idx) => {
                         const isSelected = (currentAns || []).includes(opt);
                         return (
-                          <button
+                          <label
                             key={opt}
-                            onClick={() =>
-                              handleDynamicChange(
-                                q.questionText,
-                                opt,
-                                "checkbox",
-                              )
-                            }
-                            className={`w-full p-4 rounded-xl border-2 text-left text-lg font-medium transition-all flex items-center justify-between group ${
+                            className={`w-full p-5 rounded-2xl border-2 text-left text-lg font-medium transition-all flex items-center justify-between group cursor-pointer ${
                               isSelected
-                                ? "border-blue-600 bg-blue-50 text-blue-700"
-                                : "border-gray-100 hover:border-blue-300 hover:bg-gray-50"
+                                ? "border-blue-600 bg-blue-50/50 text-blue-800 shadow-sm"
+                                : "border-gray-100 hover:border-blue-200 hover:bg-gray-50 text-gray-600"
                             }`}
                           >
-                            {opt}
-                            {isSelected ? (
-                              <CheckCircle className="text-blue-600" />
-                            ) : (
-                              <div className="w-5 h-5 border-2 rounded border-gray-300"></div>
-                            )}
-                          </button>
+                            <div className="flex items-center gap-4">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() =>
+                                  handleDynamicChange(
+                                    q.questionText,
+                                    opt,
+                                    "checkbox",
+                                  )
+                                }
+                                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                              />
+                              {opt}
+                            </div>
+                          </label>
                         );
                       })}
 
-                    {/* TEXT */}
-                    {q.inputType === "text" && (
+                    {/* INPUT TYPES */}
+                    {(q.inputType === "text" || q.inputType === "number") && (
                       <input
-                        type="text"
-                        className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg"
-                        placeholder="Cevabınızı yazın..."
+                        type={q.inputType}
+                        className="w-full p-5 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none text-xl placeholder:text-gray-300 transition-all shadow-sm"
+                        placeholder={
+                          q.inputType === "number"
+                            ? "Örn: 100"
+                            : "Cevabınızı buraya yazın..."
+                        }
                         value={currentAns || ""}
                         onChange={(e) =>
                           handleDynamicChange(
                             q.questionText,
                             e.target.value,
-                            "text",
+                            q.inputType,
                           )
                         }
+                        onKeyDown={handleKeyDown}
                         autoFocus
                       />
                     )}
 
-                    {/* --- EKLENEN KISIM: NUMBER (SAYI) --- */}
-                    {q.inputType === "number" && (
-                      <input
-                        type="number"
-                        className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg"
-                        placeholder="Bir sayı girin..."
-                        value={currentAns || ""}
-                        onChange={(e) =>
-                          handleDynamicChange(
-                            q.questionText,
-                            e.target.value,
-                            "number",
-                          )
-                        }
-                        autoFocus
-                      />
-                    )}
-
-                    {/* --- EKLENEN KISIM: TEXTAREA (UZUN YAZI) --- */}
+                    {/* TEXTAREA */}
                     {q.inputType === "textarea" && (
                       <textarea
                         rows="4"
-                        className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg resize-none"
-                        placeholder="Detaylı cevabınızı yazın..."
+                        className="w-full p-5 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none text-lg resize-none shadow-sm placeholder:text-gray-300"
+                        placeholder="Detayları buraya girebilirsiniz..."
                         value={currentAns || ""}
                         onChange={(e) =>
                           handleDynamicChange(
@@ -332,47 +376,69 @@ const CreateRequest = () => {
                       ></textarea>
                     )}
                   </div>
-                </div>
+                </fieldset>
               );
             })()}
 
           {/* 2. KONUM VE ZAMAN */}
           {step === questionCount && (
-            <div className="space-y-6">
-              <h3 className="text-2xl font-bold text-gray-900">
+            <div className="space-y-8">
+              <h2 className="text-3xl font-bold text-gray-900">
                 Konum ve Zaman
-              </h3>
-              <div className="grid gap-4">
-                <input
-                  type="text"
-                  placeholder="Şehir (Örn: İstanbul)"
-                  className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={formData.city}
-                  onChange={(e) =>
-                    setFormData({ ...formData, city: e.target.value })
-                  }
-                />
-                <input
-                  type="text"
-                  placeholder="İlçe (Örn: Kadıköy)"
-                  className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={formData.district}
-                  onChange={(e) =>
-                    setFormData({ ...formData, district: e.target.value })
-                  }
-                />
-                <select
-                  className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                  value={formData.datePreference}
-                  onChange={(e) =>
-                    setFormData({ ...formData, datePreference: e.target.value })
-                  }
-                >
-                  <option value="">Ne zaman lazım?</option>
-                  <option value="Acil">Hemen (Acil)</option>
-                  <option value="Bu hafta">Bu hafta</option>
-                  <option value="Bu ay">Bu ay</option>
-                </select>
+              </h2>
+              <div className="grid gap-5">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
+                    Şehir
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Örn: İstanbul"
+                    className="w-full p-5 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none text-lg transition-all"
+                    value={formData.city}
+                    onChange={(e) =>
+                      setFormData({ ...formData, city: e.target.value })
+                    }
+                    onKeyDown={handleKeyDown}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
+                    İlçe
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Örn: Kadıköy"
+                    className="w-full p-5 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none text-lg transition-all"
+                    value={formData.district}
+                    onChange={(e) =>
+                      setFormData({ ...formData, district: e.target.value })
+                    }
+                    onKeyDown={handleKeyDown}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">
+                    Zaman Tercihi
+                  </label>
+                  <select
+                    className="w-full p-5 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none bg-white text-lg transition-all cursor-pointer"
+                    value={formData.datePreference}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        datePreference: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Ne zaman lazım?</option>
+                    <option value="Acil">Hemen (Acil)</option>
+                    <option value="Bu hafta">Bu hafta</option>
+                    <option value="Bu ay">Bu ay</option>
+                    <option value="Belirsiz">Tarih henüz belli değil</option>
+                  </select>
+                </div>
               </div>
             </div>
           )}
@@ -380,13 +446,17 @@ const CreateRequest = () => {
           {/* 3. AÇIKLAMA */}
           {step === questionCount + 1 && (
             <div className="space-y-6">
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-3xl font-bold text-gray-900">
                 Eklemek istediklerin var mı?
-              </h3>
+              </h2>
+              <p className="text-gray-500">
+                Uzmanların size daha doğru fiyat verebilmesi için detayları
+                paylaşın.
+              </p>
               <textarea
-                rows="5"
-                placeholder="Örn: Ev 3+1, eşyalı, genel temizlik yapılacak..."
-                className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg resize-none"
+                rows="6"
+                placeholder="Örn: Eski logomuzu modernize etmek istiyoruz, renk paletimiz mavi tonları..."
+                className="w-full p-5 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none text-lg resize-none shadow-sm"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -398,40 +468,44 @@ const CreateRequest = () => {
 
           {/* 4. ÖZET */}
           {step === questionCount + 2 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle size={32} />
+            <div className="space-y-8 animate-in zoom-in-95 duration-300">
+              <div className="text-center space-y-4">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                  <CheckCircle size={40} strokeWidth={2} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">
-                  Her şey hazır!
-                </h3>
-                <p className="text-gray-500">
-                  Bilgilerini kontrol et ve yayınla.
-                </p>
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900">
+                    Her şey harika görünüyor!
+                  </h2>
+                  <p className="text-gray-500 mt-2">
+                    Bilgilerini son kez kontrol et ve ilanını yayınla.
+                  </p>
+                </div>
               </div>
 
-              <div className="bg-gray-50 p-6 rounded-xl space-y-3 text-sm max-h-60 overflow-y-auto">
+              <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 space-y-4 text-sm max-h-80 overflow-y-auto custom-scrollbar">
                 {Object.entries(dynamicAnswers).map(([q, a]) => (
                   <div
                     key={q}
-                    className="flex justify-between border-b border-gray-200 pb-2 last:border-0"
+                    className="flex flex-col sm:flex-row justify-between border-b border-gray-200 pb-3 last:border-0 gap-2"
                   >
-                    <span className="text-gray-500 w-1/2">{q}:</span>
-                    <span className="font-semibold text-gray-900 w-1/2 text-right">
+                    <span className="text-gray-500 font-medium sm:w-1/2">
+                      {q}
+                    </span>
+                    <span className="font-bold text-gray-900 sm:w-1/2 sm:text-right">
                       {Array.isArray(a) ? a.join(", ") : a}
                     </span>
                   </div>
                 ))}
-                <div className="flex justify-between border-b border-gray-200 pb-2 pt-2">
-                  <span className="text-gray-500">Konum:</span>
-                  <span className="font-semibold text-gray-900">
+                <div className="flex flex-col sm:flex-row justify-between border-b border-gray-200 pb-3 pt-2 gap-2">
+                  <span className="text-gray-500 font-medium">Konum</span>
+                  <span className="font-bold text-gray-900 sm:text-right">
                     {formData.city} / {formData.district}
                   </span>
                 </div>
-                <div className="flex justify-between pt-2">
-                  <span className="text-gray-500">Zaman:</span>
-                  <span className="font-semibold text-gray-900">
+                <div className="flex flex-col sm:flex-row justify-between pt-2 gap-2">
+                  <span className="text-gray-500 font-medium">Zaman</span>
+                  <span className="font-bold text-gray-900 sm:text-right">
                     {formData.datePreference}
                   </span>
                 </div>
@@ -441,13 +515,17 @@ const CreateRequest = () => {
         </div>
 
         {/* ALT BUTONLAR */}
-        <div className="p-6 border-t border-gray-100 flex justify-between bg-gray-50">
+        <div className="p-8 border-t border-gray-50 flex justify-between bg-white items-center">
           {step > 0 ? (
             <button
               onClick={prevStep}
-              className="flex items-center text-gray-600 hover:text-gray-900 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 transition"
+              className="group flex items-center text-gray-500 hover:text-gray-900 font-bold px-4 py-2 rounded-xl hover:bg-gray-50 transition-all"
             >
-              <ArrowLeft size={18} className="mr-2" /> Geri
+              <ArrowLeft
+                size={20}
+                className="mr-2 group-hover:-translate-x-1 transition-transform"
+              />
+              Geri
             </button>
           ) : (
             <div></div>
@@ -456,21 +534,21 @@ const CreateRequest = () => {
           {step < totalSteps - 1 ? (
             <button
               onClick={nextStep}
-              className="flex items-center bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-1"
+              className="flex items-center bg-black text-white px-8 py-4 rounded-2xl font-bold hover:bg-gray-800 hover:shadow-xl hover:shadow-gray-200 transition-all active:scale-95"
             >
-              Devam Et <ChevronRight size={20} className="ml-1" />
+              Devam Et <ChevronRight size={20} className="ml-2" />
             </button>
           ) : (
             <button
               onClick={handleSubmit}
-              className="flex items-center bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-200 transition-all transform hover:-translate-y-1"
+              className="flex items-center bg-[#c9ff2a] text-black px-10 py-4 rounded-2xl font-black hover:shadow-xl hover:shadow-lime-100 transition-all transform hover:-translate-y-1 active:scale-95"
             >
               Yayınla <CheckCircle size={20} className="ml-2" />
             </button>
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 
