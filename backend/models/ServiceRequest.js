@@ -43,6 +43,11 @@ const ServiceRequestSchema = new mongoose.Schema({
     maxlength: [1000, "Açıklama çok uzun"],
   },
 
+  allowPhoneAfterOffer: {
+  type: Boolean,
+  default: true,
+},
+
   // İlanın sistemdeki durumu
   status: {
     type: String,

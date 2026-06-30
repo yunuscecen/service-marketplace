@@ -342,12 +342,14 @@ const handleAcceptOffer = async (offerId) => {
                     </p>
                   </div>
                 </div>
-                <a
-                  href={`tel:${selectedProvider?.phone}`}
-                  className="p-2 bg-green-500 rounded-full hover:bg-green-600 transition text-white shadow-lg shadow-green-200"
-                >
-                  <Phone size={18} />
-                </a>
+               {selectedProvider?.phone && (
+  <a
+    href={`tel:${selectedProvider.phone}`}
+    className="p-2 bg-green-500 rounded-full hover:bg-green-600 transition text-white shadow-lg shadow-green-200"
+  >
+    <Phone size={18} />
+  </a>
+)}
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
                 {messages.map((msg, idx) => {
@@ -462,14 +464,28 @@ const handleAcceptOffer = async (offerId) => {
                         </div>
                       )}
                     </div>
-                    <div>
-                      <h4 className="font-bold text-gray-900 text-sm hover:text-blue-600 transition underline underline-offset-4 decoration-blue-200">
-                        {offer.provider?.name}
-                      </h4>
-                      <span className="text-[10px] text-blue-500 font-bold uppercase tracking-wider flex items-center gap-1">
-                        <MessageCircle size={10} /> Sohbet Et
-                      </span>
-                    </div>
+                   <div>
+  <h4 className="font-bold text-gray-900 text-sm hover:text-blue-600 transition underline underline-offset-4 decoration-blue-200">
+    {offer.provider?.name}
+  </h4>
+
+  <span className="text-[10px] text-blue-500 font-bold uppercase tracking-wider flex items-center gap-1">
+    <MessageCircle size={10} /> Sohbet Et
+  </span>
+
+  <div className="flex items-center gap-1 text-[10px] text-gray-500 font-semibold mt-1">
+    <Phone size={10} />
+
+    {offer.provider?.phone ? (
+      <span>{offer.provider.phone}</span>
+    ) : request.allowPhoneAfterOffer === false ? (
+      <span>Telefon, teklif kabul edilince açılır.</span>
+    ) : (
+      <span>Telefon bilgisi bulunmuyor.</span>
+    )}
+  </div>
+</div>
+                    
                   </div>
                   <span className="font-bold text-lg text-blue-600">
                     {offer.price} ₺

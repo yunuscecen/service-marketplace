@@ -24,12 +24,13 @@ const CreateRequest = () => {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [dynamicAnswers, setDynamicAnswers] = useState({});
-  const [formData, setFormData] = useState({
-    city: "",
-    district: "",
-    datePreference: "",
-    description: "",
-  });
+ const [formData, setFormData] = useState({
+  city: "",
+  district: "",
+  datePreference: "",
+  description: "",
+  allowPhoneAfterOffer: true,
+});
 
   // Hizmet Bilgisini Çek
   useEffect(() => {
@@ -133,12 +134,13 @@ const CreateRequest = () => {
   });
 
   const requestPayload = {
-    serviceId: serviceId,
-    city: formData.city,
-    district: formData.district,
-    description: formData.description,
-    answers: formattedAnswers,
-  };
+  serviceId: serviceId,
+  city: formData.city,
+  district: formData.district,
+  description: formData.description,
+  answers: formattedAnswers,
+  allowPhoneAfterOffer: formData.allowPhoneAfterOffer,
+};
 
   try {
     setSubmitLoading(true);
@@ -450,8 +452,79 @@ const CreateRequest = () => {
                     <option value="Belirsiz">Tarih henüz belli değil</option>
                   </select>
                 </div>
+                <div className="mt-8">
+  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
+    İletişim Tercihi
+  </label>
+
+  <div className="space-y-3">
+    <label
+      className={`flex items-start gap-4 p-5 rounded-2xl border cursor-pointer transition ${
+        formData.allowPhoneAfterOffer
+          ? "border-blue-500 bg-blue-50"
+          : "border-gray-100 bg-white hover:border-gray-200"
+      }`}
+    >
+      <input
+        type="radio"
+        name="allowPhoneAfterOffer"
+        checked={formData.allowPhoneAfterOffer === true}
+        onChange={() =>
+          setFormData({
+            ...formData,
+            allowPhoneAfterOffer: true,
+          })
+        }
+        className="mt-1"
+      />
+
+      <div>
+        <div className="font-bold text-gray-900">
+          Teklif veren hizmet verenler beni arayabilir.
+        </div>
+
+        <p className="text-sm text-gray-500 mt-1">
+          Hizmet veren teklif verdikten sonra telefon numaranı görebilir.
+          Daha hızlı dönüş almak için önerilir.
+        </p>
+      </div>
+    </label>
+
+    <label
+      className={`flex items-start gap-4 p-5 rounded-2xl border cursor-pointer transition ${
+        formData.allowPhoneAfterOffer === false
+          ? "border-blue-500 bg-blue-50"
+          : "border-gray-100 bg-white hover:border-gray-200"
+      }`}
+    >
+      <input
+        type="radio"
+        name="allowPhoneAfterOffer"
+        checked={formData.allowPhoneAfterOffer === false}
+        onChange={() =>
+          setFormData({
+            ...formData,
+            allowPhoneAfterOffer: false,
+          })
+        }
+        className="mt-1"
+      />
+
+      <div>
+        <div className="font-bold text-gray-900">
+          Önce mesajlaşmak istiyorum.
+        </div>
+
+        <p className="text-sm text-gray-500 mt-1">
+          Telefon numaran sadece bir teklifi kabul ettikten sonra açılır.
+        </p>
+      </div>
+    </label>
+  </div>
+</div>
               </div>
             </div>
+            
           )}
 
           {/* 3. AÇIKLAMA */}
@@ -520,6 +593,16 @@ const CreateRequest = () => {
                     {formData.datePreference}
                   </span>
                 </div>
+                 <div className="flex flex-col sm:flex-row justify-between pt-2 gap-2">
+                   <p>
+  <span className="font-bold">İletişim Tercihi</span>{" "}
+  {formData.allowPhoneAfterOffer
+    ? "Teklif verenler beni arayabilir."
+    : "Önce mesajlaşmak istiyorum."}
+</p>
+                </div>
+               
+                
               </div>
             </div>
           )}

@@ -12,14 +12,16 @@ exports.createRequest = async (req, res, next) => {
         .json({ success: false, error: "Hizmet bulunamadı" });
     }
 
-    const request = await ServiceRequest.create({
-      user: req.user.id,
-      service: req.body.serviceId,
-      answers: req.body.answers,
-      city: req.body.city,
-      district: req.body.district,
-      description: req.body.description,
-    });
+   const request = await ServiceRequest.create({
+  user: req.user.id,
+  service: req.body.serviceId,
+  answers: req.body.answers,
+  city: req.body.city,
+  district: req.body.district,
+  description: req.body.description,
+  status: "pending",
+  allowPhoneAfterOffer: req.body.allowPhoneAfterOffer !== false,
+});
 
     res.status(201).json({ success: true, data: request });
   } catch (error) {
@@ -109,11 +111,16 @@ exports.getRequest = async (req, res, next) => {
       });
     }
 
-    // Müşteri telefonu sadece:
-    // - ilan sahibine
-    // - admin'e
-    // - kabul edilen provider'a görünür
-    const canSeeCustomerPhone = isOwner || isAdmin || isAcceptedProvider;
+    const canSeeCustomerPhoneAfterOffer =
+      req.user.role === "provider" &&
+      request.allowPhoneAfterOffer === true &&
+      hasProviderOffer;
+
+    const canSeeCustomerPhone =
+      isOwner ||
+      isAdmin ||
+      isAcceptedProvider ||
+      canSeeCustomerPhoneAfterOffer;
 
     if (request.user && !canSeeCustomerPhone) {
       delete request.user.phone;

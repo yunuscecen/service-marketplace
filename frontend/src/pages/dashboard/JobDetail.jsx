@@ -275,9 +275,11 @@ const handleSendMessage = async (e) => {
                   >
                     <Phone size={16} />
                     <span className="text-xs font-bold">
-                    {myOffer?.status === "accepted" && job.user?.phone
+                  {job.user?.phone
   ? job.user.phone
-  : "Telefon numarası teklif kabul edildikten sonra açılır."}
+  : job.allowPhoneAfterOffer === false
+  ? "Müşteri önce mesajlaşmak istiyor. Telefon teklif kabul edilince açılır."
+  : "Telefon numarası teklif verdikten sonra açılır."}
                     </span>
                   </a>
                 </div>

@@ -127,7 +127,9 @@ exports.getOffersForRequest = async (req, res, next) => {
         // - admin görebilir
         // - ilan sahibi, sadece kabul ettiği provider'ın telefonunu görebilir
         const canSeeProviderPhone =
-          isAdmin || (isOwner && isAcceptedProvider && jobStartedOrFinished);
+  isAdmin ||
+  (isOwner && serviceRequest.allowPhoneAfterOffer === true) ||
+  (isOwner && isAcceptedProvider && jobStartedOrFinished);
 
         if (offerObject.provider && !canSeeProviderPhone) {
           delete offerObject.provider.phone;
