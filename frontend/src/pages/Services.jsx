@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom"; // URL parametreleri için eklendi
+import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import api from "../services/api";
 import {
@@ -54,54 +54,36 @@ const Services = () => {
   };
 
   // Performanslı Filtreleme (useMemo)
-  // Her render'da tekrar hesaplamak yerine, sadece services veya searchTerm değişince çalışır.
   const filteredServices = useMemo(() => {
     return services.filter((service) => {
       const name = service.name?.toLocaleLowerCase("tr") || "";
-      const desc = service.description?.toLocaleLowerCase("tr") || ""; // Açıklamada da ara
+      const desc = service.description?.toLocaleLowerCase("tr") || "";
       const search = searchTerm.toLocaleLowerCase("tr");
       return name.includes(search) || desc.includes(search);
     });
   }, [services, searchTerm]);
 
-  // İkon Seçici (Genişletilmiş ve Güvenli)
+  // İkon Seçici (Minimalize edildi, rengi CSS'ten devralır)
   const getIcon = (service) => {
-    // Hem slug hem name kontrolü yaparak daha isabetli ikon
     const text = (service.slug || service.name || "").toLowerCase();
     const props = {
-      className: "w-7 h-7 text-[#1d1d1f]",
+      size: 24,
       strokeWidth: 1.5,
       "aria-hidden": "true",
     };
 
-    if (text.includes("mobil") || text.includes("app"))
-      return <Smartphone {...props} />;
-    if (
-      text.includes("yazılım") ||
-      text.includes("web") ||
-      text.includes("kod")
-    )
-      return <Code {...props} />;
-    if (
-      text.includes("tasarım") ||
-      text.includes("logo") ||
-      text.includes("grafik")
-    )
-      return <PenTool {...props} />;
-    if (text.includes("veri") || text.includes("data"))
-      return <Database {...props} />;
-    if (text.includes("seo") || text.includes("pazarlama"))
-      return <Globe {...props} />;
-    if (text.includes("güvenlik") || text.includes("siber"))
-      return <Shield {...props} />;
-    if (text.includes("sunucu") || text.includes("devops"))
-      return <Server {...props} />;
+    if (text.includes("mobil") || text.includes("app")) return <Smartphone {...props} />;
+    if (text.includes("yazılım") || text.includes("web") || text.includes("kod")) return <Code {...props} />;
+    if (text.includes("tasarım") || text.includes("logo") || text.includes("grafik")) return <PenTool {...props} />;
+    if (text.includes("veri") || text.includes("data")) return <Database {...props} />;
+    if (text.includes("seo") || text.includes("pazarlama")) return <Globe {...props} />;
+    if (text.includes("güvenlik") || text.includes("siber")) return <Shield {...props} />;
+    if (text.includes("sunucu") || text.includes("devops")) return <Server {...props} />;
 
     return <Sparkles {...props} />;
   };
 
   // --- SCHEMA.ORG (ITEM LIST) ---
-  // Google'a "Bu sayfa bir hizmet listesidir" diyoruz.
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -120,82 +102,102 @@ const Services = () => {
   };
 
   return (
-    <main className="min-h-screen bg-white text-[#1d1d1f] font-sans selection:bg-gray-100">
+    <main
+      className="min-h-screen bg-white text-zinc-900 selection:bg-zinc-900 selection:text-white"
+      style={{ fontFamily: "'Inter', sans-serif" }}
+    >
       <Helmet>
         <title>Hizmetler | Fırsatİş - Tüm Kategoriler</title>
         <meta
           name="description"
           content={`Web yazılım, grafik tasarım, SEO ve ${services.length} farklı kategoride uzman freelancer hizmetleri.`}
         />
+        {/* Inter Fontu Entegrasyonu (Eğer Home.jsx'ten global gelmiyorsa garantiye almak için) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
         <link rel="canonical" href="https://firsatis.com/services" />
         <meta name="robots" content="index, follow" />
-
-        {/* Yapısal Veri */}
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
 
-      {/* --- HEADER ALANI --- */}
-      <section className="max-w-[1400px] mx-auto px-6 pt-24 pb-16">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 border border-gray-200 text-gray-500 text-[10px] font-bold tracking-widest uppercase mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-black"></span>
-            Katalog
-          </div>
-          <h1 className="text-5xl md:text-7xl font-semibold tracking-tight mb-6 leading-[1.1] text-[#1d1d1f]">
-            Tüm Hizmetler.
-          </h1>
-          <p className="text-xl text-gray-500 font-medium max-w-2xl leading-relaxed">
-            İhtiyacınız olan yeteneği bulun.{" "}
-            {services.length > 0 && (
-              <span className="text-black font-semibold">
-                {services.length}
-              </span>
-            )}{" "}
-            farklı kategori ve yüzlerce uzman sizi bekliyor.
-          </p>
-        </div>
+      {/* --- KOMPAKT HERO ALANI --- */}
+      <section className="max-w-7xl mx-auto px-6 pt-24 pb-12">
+        <div className="flex flex-col md:flex-row gap-12 items-center">
+          
+          {/* Sol: Başlık ve Arama */}
+          <div className="flex-1 space-y-6 w-full">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-600 text-xs font-semibold tracking-wide">
+              Katalog
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05] text-zinc-900">
+              Tüm Hizmetler.
+            </h1>
+            
+            <p className="text-lg text-zinc-500 font-normal max-w-lg leading-relaxed">
+              İhtiyacınız olan yeteneği bulun.{" "}
+              {services.length > 0 && (
+                <span className="text-zinc-900 font-semibold">{services.length}</span>
+              )}{" "}
+              farklı kategori ve yüzlerce uzman sizi bekliyor.
+            </p>
 
-        {/* ARAMA BAR (Form Yapısı) */}
-        <form
-          role="search"
-          onSubmit={(e) => e.preventDefault()}
-          className="mt-16 relative max-w-xl group"
-        >
-          <label htmlFor="service-search" className="sr-only">
-            Hizmet Ara
-          </label>
-          <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-1">
-            <Search className="h-6 w-6 text-gray-300 group-focus-within:text-black transition-colors" />
+            {/* Modern Arama Barı */}
+            <form
+              role="search"
+              onSubmit={(e) => e.preventDefault()}
+              className="relative max-w-lg mt-8 group"
+            >
+              <label htmlFor="service-search" className="sr-only">
+                Hizmet Ara
+              </label>
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <Search size={20} className="text-zinc-400 group-focus-within:text-zinc-900 transition-colors" />
+              </div>
+              <input
+                id="service-search"
+                type="search"
+                placeholder="Hizmet ara... (Örn: Logo, Web)"
+                className="w-full pl-12 pr-4 py-4 bg-white border border-zinc-200 rounded-2xl text-base outline-none focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100 transition-all font-medium text-zinc-900 placeholder:text-zinc-400 shadow-sm"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                autoComplete="off"
+              />
+            </form>
           </div>
-          <input
-            id="service-search"
-            type="search"
-            placeholder="Hizmet ara... (Örn: Logo, Web)"
-            className="w-full pl-10 pr-4 py-4 bg-transparent border-b border-gray-200 text-2xl outline-none placeholder-gray-300 focus:border-black transition-colors font-medium text-[#1d1d1f]"
-            value={searchTerm}
-            onChange={handleSearchChange}
-            autoComplete="off"
-          />
-        </form>
+
+          {/* Sağ: Estetik Görsel (Hero Image) */}
+          <div className="w-full md:w-5/12 aspect-video md:aspect-[4/3] rounded-[2rem] overflow-hidden relative shadow-2xl shadow-zinc-200 hidden md:block">
+            <img 
+              src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200&auto=format&fit=crop" 
+              alt="Dijital Hizmetler ve Tasarım" 
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-tr from-zinc-900/20 to-transparent"></div>
+          </div>
+
+        </div>
       </section>
 
       {/* --- LİSTE ALANI --- */}
-      <section
-        className="max-w-[1400px] mx-auto px-6 pb-24"
-        aria-label="Hizmet Listesi"
-      >
+      <section className="max-w-7xl mx-auto px-6 pb-32 pt-8" aria-label="Hizmet Listesi">
+        
         {loading ? (
           // SKELETON LOADER
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((n) => (
               <div
                 key={n}
-                className="bg-[#F5F5F7] rounded-[2rem] h-80 animate-pulse flex flex-col p-8 space-y-4"
+                className="bg-zinc-50 border border-zinc-100 rounded-[2rem] h-[300px] animate-pulse flex flex-col p-8 space-y-4"
               >
-                <div className="w-14 h-14 bg-gray-200 rounded-2xl"></div>
-                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                <div className="w-14 h-14 bg-zinc-200 rounded-xl mb-4"></div>
+                <div className="h-6 bg-zinc-200 rounded w-2/3"></div>
+                <div className="h-4 bg-zinc-200 rounded w-full"></div>
+                <div className="h-4 bg-zinc-200 rounded w-4/5 mt-auto"></div>
               </div>
             ))}
           </div>
@@ -206,59 +208,54 @@ const Services = () => {
                 <Link
                   key={service._id}
                   to={`/create-request/${service._id}`}
-                  className="group relative bg-[#F5F5F7] rounded-[2rem] p-8 h-80 flex flex-col justify-between transition-all duration-500 hover:bg-white hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.1)] hover:scale-[1.01] cursor-pointer overflow-hidden border border-transparent hover:border-gray-100"
+                  className="group flex flex-col bg-white border border-zinc-200 rounded-[2rem] p-8 h-[300px] hover:border-zinc-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 relative overflow-hidden"
                   aria-label={`${service.name} hizmeti için talep oluştur`}
                 >
-                  {/* Hover Efekti için Arkaplan Işıltısı */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-gray-200/50 to-transparent rounded-bl-[4rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-                  {/* Üst Kısım */}
-                  <div className="relative z-10">
-                    <div className="bg-white w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-500">
-                      {getIcon(service)}
-                    </div>
-
-                    <h2 className="text-2xl font-bold text-[#1d1d1f] mb-3 tracking-tight group-hover:text-black">
-                      {service.name}
-                    </h2>
-
-                    <p className="text-gray-500 text-sm font-medium leading-relaxed line-clamp-2 pr-2">
-                      {service.description ||
-                        "Bu kategoride uzmanlardan teklif alarak projenizi hayata geçirin."}
-                    </p>
+                  <div className="w-14 h-14 bg-zinc-50 rounded-xl flex items-center justify-center mb-6 text-zinc-500 group-hover:bg-zinc-900 group-hover:text-white transition-colors duration-300">
+                    {getIcon(service)}
                   </div>
 
-                  {/* Alt Kısım: Aksiyon */}
-                  <div className="relative z-10 flex items-center justify-between border-t border-gray-200/50 pt-6 mt-2">
-                    <span className="text-sm font-bold text-gray-400 group-hover:text-black transition-colors">
+                  <h2 className="text-xl font-bold text-zinc-900 mb-3 tracking-tight">
+                    {service.name}
+                  </h2>
+
+                  <p className="text-zinc-500 text-sm font-normal leading-relaxed line-clamp-3">
+                    {service.description ||
+                      "Bu kategoride uzmanlardan teklif alarak projenizi hayata geçirin."}
+                  </p>
+
+                  {/* Alt Kısım: Aksiyon Ok İşareti */}
+                  <div className="mt-auto flex items-center justify-between pt-6 border-t border-zinc-100">
+                    <span className="text-sm font-semibold text-zinc-400 group-hover:text-zinc-900 transition-colors">
                       Talep Oluştur
                     </span>
-                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500 shadow-sm border border-gray-50 text-black">
-                      <ArrowUpRight className="w-5 h-5" />
-                    </div>
+                    <ArrowUpRight 
+                      size={20} 
+                      className="text-zinc-300 group-hover:text-zinc-900 transition-colors" 
+                    />
                   </div>
                 </Link>
               ))
             ) : (
-              // SONUÇ BULUNAMADI
-              <div className="col-span-full py-24 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-50 rounded-full mb-4">
-                  <Search className="w-6 h-6 text-gray-400" />
+              // SONUÇ BULUNAMADI ALANI
+              <div className="col-span-full py-24 text-center flex flex-col items-center">
+                <div className="w-16 h-16 bg-zinc-50 border border-zinc-100 rounded-2xl flex items-center justify-center mb-6">
+                  <Search size={28} className="text-zinc-400" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                <h3 className="text-2xl font-bold text-zinc-900 mb-3">
                   Sonuç Bulunamadı
                 </h3>
-                <p className="text-gray-500 text-lg font-medium">
-                  "{searchTerm}" aramasıyla eşleşen bir hizmet yok.
+                <p className="text-zinc-500 text-base max-w-md mx-auto mb-8">
+                  "<span className="text-zinc-900 font-medium">{searchTerm}</span>" aramasıyla eşleşen bir kategori bulamadık. Lütfen farklı bir terimle tekrar deneyin.
                 </p>
                 <button
                   onClick={() => {
                     setSearchTerm("");
                     setSearchParams({});
                   }}
-                  className="mt-6 text-black border-b-2 border-black pb-0.5 hover:opacity-70 transition-opacity font-bold"
+                  className="bg-zinc-900 text-white px-6 py-3 rounded-xl font-medium hover:bg-zinc-800 transition-colors active:scale-95"
                 >
-                  Tüm hizmetleri göster
+                  Tüm Kategorileri Göster
                 </button>
               </div>
             )}
