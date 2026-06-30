@@ -109,7 +109,7 @@ const RequestDetail = () => {
 
     return () => {
       socket.off("receive_message", handleNewMessage);
-      socket.on("new_message_notification", handleNewMessage);
+      socket.off("new_message_notification", handleNewMessage);
     };
   }, [activeChat, user]);
 
