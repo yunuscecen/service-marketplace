@@ -35,6 +35,7 @@ const JobDetail = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
 const [isSending, setIsSending] = useState(false);
+const [offerSubmitting, setOfferSubmitting] = useState(false);
 const hasCredits = Number(user?.offerLimit || 0) > 0;
 
   const [offerData, setOfferData] = useState({
@@ -110,7 +111,11 @@ const hasCredits = Number(user?.offerLimit || 0) > 0;
 const handleSubmit = async (e) => {
   e.preventDefault();
 
+  if (offerSubmitting) return;
+
   try {
+    setOfferSubmitting(true);
+
     await api.post("/offers", {
       requestId: id,
       price: offerData.price,
@@ -122,9 +127,10 @@ const handleSubmit = async (e) => {
     window.location.reload();
   } catch (error) {
     toast.error(error.response?.data?.error || "Teklif gönderilemedi.");
+  } finally {
+    setOfferSubmitting(false);
   }
 };
-
 const handleSendMessage = async (e) => {
   e.preventDefault();
 
@@ -269,7 +275,9 @@ const handleSendMessage = async (e) => {
                   >
                     <Phone size={16} />
                     <span className="text-xs font-bold">
-                      {job.user?.phone || "Numara Yok"}
+                    {myOffer?.status === "accepted" && job.user?.phone
+  ? job.user.phone
+  : "Telefon numarası teklif kabul edildikten sonra açılır."}
                     </span>
                   </a>
                 </div>
@@ -400,12 +408,16 @@ const handleSendMessage = async (e) => {
                     ></textarea>
                   </div>
                   <button
-                    type="submit"
-                    disabled={!hasCredits}
-                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200"
-                  >
-                    Teklifi Gönder
-                  </button>
+  type="submit"
+  disabled={offerSubmitting || !hasCredits}
+  className={`w-full bg-blue-600 text-white py-4 rounded-2xl font-black transition ${
+    offerSubmitting || !hasCredits
+      ? "opacity-60 cursor-not-allowed"
+      : "hover:bg-blue-700"
+  }`}
+>
+  {offerSubmitting ? "Teklif gönderiliyor..." : "Teklifi Gönder"}
+</button>
                 </form>
               </div>
             </div>

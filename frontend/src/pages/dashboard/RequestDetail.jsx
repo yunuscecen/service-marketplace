@@ -39,6 +39,7 @@ const RequestDetail = () => {
   const [selectedProvider, setSelectedProvider] = useState(null);
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [acceptingOfferId, setAcceptingOfferId] = useState(null);
   const [reviewData, setReviewData] = useState({
     rating: 5,
     title: "",
@@ -200,24 +201,33 @@ useEffect(() => {
     }
   };
 
-  const handleAcceptOffer = async (offerId) => {
-    if (!window.confirm("Bu teklifi kabul etmek istediğine emin misin?"))
-      return;
-    try {
-      await api.put(`/offers/${offerId}/accept`);
-      toast.success("Teklif kabul edildi! İş başladı.");
-      setRequest((prev) => ({ ...prev, status: "in_progress" }));
-      setOffers((prev) =>
-        prev.map((o) =>
-          o._id === offerId
-            ? { ...o, status: "accepted" }
-            : { ...o, status: "rejected" },
-        ),
-      );
-    } catch (error) {
-      toast.error("İşlem başarısız.");
-    }
-  };
+const handleAcceptOffer = async (offerId) => {
+  if (acceptingOfferId) return;
+
+  if (!window.confirm("Bu teklifi kabul etmek istediğine emin misin?")) {
+    return;
+  }
+
+  try {
+    setAcceptingOfferId(offerId);
+
+    await api.put(`/offers/${offerId}/accept`);
+
+    const [reqRes, offerRes] = await Promise.all([
+      api.get(`/requests/${id}`),
+      api.get(`/offers/request/${id}`),
+    ]);
+
+    setRequest(reqRes.data.data);
+    setOffers(offerRes.data.data);
+
+    toast.success("Teklif kabul edildi. İş süreci başladı.");
+  } catch (error) {
+    toast.error(error.response?.data?.error || "İşlem başarısız.");
+  } finally {
+    setAcceptingOfferId(null);
+  }
+};
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
@@ -472,14 +482,19 @@ useEffect(() => {
                   <span className="text-xs text-gray-500 font-medium">
                     ⏱ {offer.deliveryTime}
                   </span>
-                  {request.status === "active" && (
-                    <button
-                      onClick={() => handleAcceptOffer(offer._id)}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 shadow-sm transition"
-                    >
-                      Kabul Et
-                    </button>
-                  )}
+                  {request.status === "active" && offer.status === "pending" && (
+  <button
+    onClick={() => handleAcceptOffer(offer._id)}
+    disabled={acceptingOfferId === offer._id}
+    className={`bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition ${
+      acceptingOfferId === offer._id
+        ? "opacity-60 cursor-not-allowed"
+        : "hover:bg-green-700"
+    }`}
+  >
+    {acceptingOfferId === offer._id ? "Kabul ediliyor..." : "Kabul Et"}
+  </button>
+)}
                   {offer.status === "accepted" && (
                     <span className="text-green-600 font-bold text-sm flex items-center gap-1">
                       <CheckCircle size={16} /> KABUL EDİLDİ

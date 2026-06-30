@@ -34,16 +34,18 @@ exports.createReview = async (req, res, next) => {
     }
 
     // 4. Kabul edilen teklifi bul (Hizmet vereni bulmak için)
-    const acceptedOffer = await Offer.findOne({
-      request: requestId,
-      status: "accepted",
-    });
-    if (!acceptedOffer) {
-      return res.status(400).json({
-        success: false,
-        error: "Bu işi yapan bir hizmet veren bulunamadı.",
-      });
-    }
+  let acceptedOffer = null;
+
+if (request.acceptedOffer) {
+  acceptedOffer = await Offer.findById(request.acceptedOffer);
+}
+
+if (!acceptedOffer) {
+  acceptedOffer = await Offer.findOne({
+    request: requestId,
+    status: "accepted",
+  });
+}
 
     // 5. Yorumu Oluştur
     const review = await Review.create({
@@ -56,8 +58,9 @@ exports.createReview = async (req, res, next) => {
     });
 
     // 6. İlanı 'completed' (Tamamlandı) olarak işaretle (Review yapıldıysa iş bitmiştir)
-    request.status = "completed";
-    await request.save();
+request.status = "completed";
+request.completedAt = new Date();
+await request.save();
 
     res.status(201).json({
       success: true,

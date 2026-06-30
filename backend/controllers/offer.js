@@ -36,6 +36,13 @@ if (request.status !== "active") {
   });
 }
 
+if (request.status !== "active") {
+  return res.status(400).json({
+    success: false,
+    error: "Bu ilana şu anda teklif verilemez.",
+  });
+}
+
     if (request.user.toString() === req.user.id) {
       return res.status(400).json({
         success: false,
@@ -73,56 +80,99 @@ if (request.status !== "active") {
 exports.getOffersForRequest = async (req, res, next) => {
   try {
     const serviceRequest = await ServiceRequest.findById(req.params.requestId);
+
     if (!serviceRequest) {
-      return res.status(404).json({ success: false, error: "İlan bulunamadı" });
+      return res.status(404).json({
+        success: false,
+        error: "İlan bulunamadı",
+      });
     }
 
-    let filter = { request: req.params.requestId };
+    let filter = {
+      request: req.params.requestId,
+    };
 
-    if (serviceRequest.user.toString() !== req.user.id) {
+    const isOwner = serviceRequest.user.toString() === req.user.id;
+    const isAdmin = req.user.role === "admin";
+
+    // İlan sahibi tüm teklifleri görür.
+    // Provider ise sadece kendi teklifini görür.
+    if (!isOwner && !isAdmin) {
       filter.provider = req.user.id;
     }
 
     const offers = await Offer.find(filter)
-      .populate("provider", "name email phone") // Telefonu da ekledik
+      .populate("provider", "name email phone")
       .sort("-createdAt");
 
-    // --- KRİTİK EKLEME: MÜŞTERİ İÇİN OKUNMAMIŞLARI SAY ---
-    // ... offer.js içindeki getMyOffers fonksiyonu
-    const offersWithUnread = await Promise.all(
+    const offersWithDetails = await Promise.all(
       offers.map(async (offer) => {
-        const chat = await Chat.findOne({
-          request: offer.request?._id,
-          participants: req.user.id,
-        });
+        const offerObject = offer.toObject();
+
+        const providerId =
+          offerObject.provider?._id?.toString() ||
+          offerObject.provider?.toString();
+
+        const acceptedProviderId =
+          serviceRequest.acceptedProvider?.toString();
+
+        const isAcceptedProvider =
+          acceptedProviderId && providerId === acceptedProviderId;
+
+        const jobStartedOrFinished =
+          serviceRequest.status === "in_progress" ||
+          serviceRequest.status === "completed";
+
+        // Provider telefonu sadece:
+        // - admin görebilir
+        // - ilan sahibi, sadece kabul ettiği provider'ın telefonunu görebilir
+        const canSeeProviderPhone =
+          isAdmin || (isOwner && isAcceptedProvider && jobStartedOrFinished);
+
+        if (offerObject.provider && !canSeeProviderPhone) {
+          delete offerObject.provider.phone;
+        }
 
         let unreadCount = 0;
-        let chatId = null; // Sohbet ID'sini ekliyoruz
+        let chatId = null;
+
+        const chat = await Chat.findOne({
+          request: serviceRequest._id,
+          participants: {
+            $all: [req.user.id, providerId],
+          },
+        });
 
         if (chat) {
-          chatId = chat._id; // ID'yi aldık
+          chatId = chat._id;
+
           unreadCount = await Message.countDocuments({
             chat: chat._id,
-            sender: { $ne: req.user.id },
+            sender: {
+              $ne: req.user.id,
+            },
             read: false,
           });
         }
 
         return {
-          ...offer.toObject(),
+          ...offerObject,
           unreadCount,
-          chatId, // Bunu frontend'e gönderiyoruz
+          chatId,
         };
-      }),
+      })
     );
 
     res.status(200).json({
       success: true,
-      count: offersWithUnread.length,
-      data: offersWithUnread, // Frontend artık sayıları alacak
+      count: offersWithDetails.length,
+      data: offersWithDetails,
     });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
   }
 };
 
@@ -130,26 +180,41 @@ exports.getOffersForRequest = async (req, res, next) => {
 exports.acceptOffer = async (req, res, next) => {
   try {
     const offer = await Offer.findById(req.params.id);
+
     if (!offer) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Teklif bulunamadı" });
+      return res.status(404).json({
+        success: false,
+        error: "Teklif bulunamadı",
+      });
     }
 
     const request = await ServiceRequest.findById(offer.request);
 
-    if (request.user.toString() !== req.user.id) {
-      return res.status(401).json({
+    if (!request) {
+      return res.status(404).json({
         success: false,
-        error:
-          "Bu işlem için yetkiniz yok. Sadece ilan sahibi teklifi kabul edebilir.",
+        error: "İlan bulunamadı",
       });
     }
 
-    if (request.status === "completed" || request.status === "in_progress") {
+    if (request.user.toString() !== req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: "Sadece ilan sahibi teklifi kabul edebilir.",
+      });
+    }
+
+    if (request.status !== "active") {
       return res.status(400).json({
         success: false,
-        error: "Bu iş için zaten bir anlaşma yapılmış.",
+        error: "Sadece yayındaki ilanlarda teklif kabul edilebilir.",
+      });
+    }
+
+    if (offer.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        error: "Bu teklif artık kabul edilemez.",
       });
     }
 
@@ -157,21 +222,41 @@ exports.acceptOffer = async (req, res, next) => {
     await offer.save();
 
     await Offer.updateMany(
-      { request: request._id, _id: { $ne: offer._id } },
-      { status: "rejected" },
+      {
+        request: request._id,
+        _id: {
+          $ne: offer._id,
+        },
+      },
+      {
+        $set: {
+          status: "rejected",
+        },
+      }
     );
 
     request.status = "in_progress";
+    request.acceptedOffer = offer._id;
+    request.acceptedProvider = offer.provider;
+    request.agreedPrice = offer.price;
+    request.agreedDeliveryTime = offer.deliveryTime;
+    request.acceptedAt = new Date();
+
     await request.save();
 
     res.status(200).json({
       success: true,
-      data: offer,
-      message:
-        "Teklif kabul edildi, diğer teklifler reddedildi ve iş süreci başladı.",
+      data: {
+        offer,
+        request,
+      },
+      message: "Teklif kabul edildi. İş süreci başladı.",
     });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
   }
 };
 

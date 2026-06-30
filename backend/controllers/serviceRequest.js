@@ -57,25 +57,77 @@ exports.getRequest = async (req, res, next) => {
   try {
     const request = await ServiceRequest.findById(req.params.id)
       .populate("service", "name slug")
-      .populate("user", "name phone"); // Telefon numarasını populate ediyoruz
+      .populate("user", "name phone")
+      .lean();
 
     if (!request) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Talep bulunamadı" });
+      return res.status(404).json({
+        success: false,
+        error: "Talep bulunamadı",
+      });
     }
 
-    // Yetki Kontrolü
-    const isOwner = request.user._id.toString() === req.user.id;
-    const isProvider = req.user.role === "provider";
+    const requestOwnerId = request.user?._id?.toString();
+    const currentUserId = req.user.id;
 
-    if (!isOwner && !isProvider) {
-      return res.status(401).json({ success: false, error: "Yetkisiz erişim" });
+    const isOwner = requestOwnerId === currentUserId;
+    const isAdmin = req.user.role === "admin";
+
+    let providerOffer = null;
+
+    if (req.user.role === "provider") {
+      providerOffer = await Offer.findOne({
+        request: req.params.id,
+        provider: currentUserId,
+      })
+        .select("status")
+        .lean();
     }
 
-    res.status(200).json({ success: true, data: request });
+    const hasProviderOffer = !!providerOffer;
+
+    const isAcceptedProvider =
+      req.user.role === "provider" &&
+      (request.acceptedProvider?.toString() === currentUserId ||
+        providerOffer?.status === "accepted") &&
+      (request.status === "in_progress" || request.status === "completed");
+
+    const isActiveProviderView =
+      req.user.role === "provider" && request.status === "active";
+
+    const canViewRequest =
+      isOwner ||
+      isAdmin ||
+      isActiveProviderView ||
+      hasProviderOffer ||
+      isAcceptedProvider;
+
+    if (!canViewRequest) {
+      return res.status(401).json({
+        success: false,
+        error: "Yetkisiz erişim",
+      });
+    }
+
+    // Müşteri telefonu sadece:
+    // - ilan sahibine
+    // - admin'e
+    // - kabul edilen provider'a görünür
+    const canSeeCustomerPhone = isOwner || isAdmin || isAcceptedProvider;
+
+    if (request.user && !canSeeCustomerPhone) {
+      delete request.user.phone;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: request,
+    });
   } catch (error) {
-    res.status(400).json({ success: false, error: "Talep getirilemedi" });
+    res.status(400).json({
+      success: false,
+      error: "Talep getirilemedi",
+    });
   }
 };
 
@@ -119,16 +171,38 @@ exports.getOpenRequests = async (req, res, next) => {
 exports.completeRequest = async (req, res, next) => {
   try {
     const request = await ServiceRequest.findById(req.params.id);
-    if (!request)
-      return res.status(404).json({ success: false, error: "İlan bulunamadı" });
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        error: "İlan bulunamadı",
+      });
+    }
 
     if (request.user.toString() !== req.user.id) {
-      return res
-        .status(401)
-        .json({ success: false, error: "Bu işlem için yetkiniz yok." });
+      return res.status(401).json({
+        success: false,
+        error: "Bu işlem için yetkiniz yok.",
+      });
+    }
+
+    if (request.status !== "in_progress") {
+      return res.status(400).json({
+        success: false,
+        error: "Sadece devam eden işler tamamlanabilir.",
+      });
+    }
+
+    if (!request.acceptedOffer || !request.acceptedProvider) {
+      return res.status(400).json({
+        success: false,
+        error: "Bu iş için kabul edilmiş bir teklif bulunmuyor.",
+      });
     }
 
     request.status = "completed";
+    request.completedAt = new Date();
+
     await request.save();
 
     res.status(200).json({
@@ -137,6 +211,9 @@ exports.completeRequest = async (req, res, next) => {
       message: "İş başarıyla tamamlandı.",
     });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
   }
 };

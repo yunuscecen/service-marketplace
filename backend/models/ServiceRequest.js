@@ -76,6 +76,36 @@ const ServiceRequestSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  // Kabul edilen teklif / anlaşma bilgileri
+acceptedOffer: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Offer",
+},
+
+acceptedProvider: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+},
+
+agreedPrice: {
+  type: Number,
+},
+
+agreedDeliveryTime: {
+  type: String,
+},
+
+acceptedAt: {
+  type: Date,
+},
+
+completedAt: {
+  type: Date,
+},
+
+canceledAt: {
+  type: Date,
+},
 
   // İleride teklif kabul edildiğinde kullanacağız
   acceptedOffer: {
