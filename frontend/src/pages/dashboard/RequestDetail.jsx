@@ -18,8 +18,9 @@ import {
   Phone,
 } from "lucide-react";
 import toast from "react-hot-toast";
-const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
-  transports: ["websocket"], // Render'da daha stabil çalışması için şart
+const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", {
+  transports: ["websocket", "polling"],
+  withCredentials: true,
 });
 
 const RequestDetail = () => {
@@ -104,11 +105,11 @@ const RequestDetail = () => {
     };
 
     socket.on("receive_message", handleNewMessage);
-    socket.on("new_notification", handleNewMessage); // Genel bildirim için
+    socket.on("new_message_notification", handleNewMessage);// Genel bildirim için
 
     return () => {
       socket.off("receive_message", handleNewMessage);
-      socket.off("new_notification", handleNewMessage);
+      socket.on("new_message_notification", handleNewMessage);
     };
   }, [activeChat, user]);
 

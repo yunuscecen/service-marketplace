@@ -17,8 +17,9 @@ import {
 import toast from "react-hot-toast";
 
 // Socket sunucu adresi (Backend URL'niz)
-const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
-  transports: ["websocket"], // Render'da daha stabil çalışması için şart
+const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", {
+  transports: ["websocket", "polling"],
+  withCredentials: true,
 });
 
 const JobDetail = () => {
@@ -124,28 +125,34 @@ const handleSubmit = async (e) => {
   }
 };
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
+ const handleSendMessage = async (e) => {
+  e.preventDefault();
 
-    const messageData = {
-      chatId: chat._id,
-      text: newMessage,
-      sender: user._id || user.id,
-    };
+  if (!newMessage.trim()) return;
 
-    try {
-      const res = await api.post("/chats/message", messageData);
-      // Socket ile gönder
-      socket.emit("send_message", { ...res.data.data, chatId: chat._id });
+  const receiverId = job.user?._id || job.user;
 
-      // Kendi listeme ekle (Hemen görünmesi için)
-      setMessages((prev) => [...prev, res.data.data]);
-      setNewMessage("");
-    } catch (error) {
-      toast.error("Mesaj gönderilemedi.");
-    }
+  const messageData = {
+    chatId: chat._id,
+    text: newMessage,
+    sender: user._id || user.id,
+    receiverId,
+    requestId: id,
   };
+
+  try {
+    const res = await api.post("/chats/message", messageData);
+socket.emit("send_message", {
+  ...res.data.data,
+  ...messageData,
+});
+
+    setMessages((prev) => [...prev, res.data.data]);
+    setNewMessage("");
+  } catch (error) {
+    toast.error("Mesaj gönderilemedi.");
+  }
+};
 
   if (loading)
     return (
