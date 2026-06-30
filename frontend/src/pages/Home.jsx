@@ -1,25 +1,22 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import {
-  ArrowRight,
-  ArrowUpRight,
-  Check,
-  Code,
-  Cpu,
-  Crown,
-  Database,
-  Globe,
-  Layers,
-  PenTool,
-  Rocket,
   Search,
-  Shield,
-  Sparkles,
+  Code,
   Smartphone,
+  PenTool,
+  Globe,
+  Database,
+  Cpu,
+  Check,
   Zap,
+  Rocket,
+  Crown,
+  ArrowUpRight,
+  Github,
 } from "lucide-react";
 
 const Home = () => {
@@ -28,16 +25,19 @@ const Home = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
+  // GitHub Linkini dinamik bir değişkene atadık
+  const githubRepoUrl = "https://github.com/yunuscecen/service-marketplace";
+
+  // Tasarımı minimalize etmek için renkleri nötr/monokrom tonlara çektik
   const plans = [
     {
       id: "basic",
       name: "Başlangıç",
       offers: 4,
       price: 495,
-      icon: <Zap size={28} className="text-orange-500" aria-hidden="true" />,
-      bg: "from-orange-50 via-white to-blue-50",
-      ring: "ring-orange-100",
-      accent: "text-orange-600",
+      icon: <Zap size={24} className="text-zinc-500" aria-hidden="true" />,
+      bg: "bg-zinc-50",
+      accent: "text-zinc-600",
       description:
         "Sistemi denemek ve ilk projelerinize teklif vermek için ideal.",
     },
@@ -46,10 +46,9 @@ const Home = () => {
       name: "Profesyonel",
       offers: 8,
       price: 935,
-      icon: <Rocket size={28} className="text-blue-500" aria-hidden="true" />,
-      bg: "from-blue-50 via-white to-emerald-50",
-      ring: "ring-blue-100",
-      accent: "text-blue-600",
+      icon: <Rocket size={24} className="text-zinc-900" aria-hidden="true" />,
+      bg: "bg-zinc-900",
+      accent: "text-zinc-100",
       popular: true,
       description:
         "Düzenli iş alan teknoloji uzmanları için en çok tercih edilen paket.",
@@ -59,43 +58,32 @@ const Home = () => {
       name: "Kurumsal",
       offers: 12,
       price: 1375,
-      icon: <Crown size={28} className="text-purple-500" aria-hidden="true" />,
-      bg: "from-purple-50 via-white to-orange-50",
-      ring: "ring-purple-100",
-      accent: "text-purple-600",
+      icon: <Crown size={24} className="text-zinc-500" aria-hidden="true" />,
+      bg: "bg-white",
+      accent: "text-zinc-600",
       description:
         "Büyük ölçekli projeler ve ajanslar için yüksek kapasiteli çözüm.",
     },
-  ];
-
-  const footerLinks = [
-    { label: "Hizmetler", to: "/services" },
-    { label: "Paketler", to: "/dashboard/packages" },
-    { label: "Giriş", to: "/login" },
   ];
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
         const res = await api.get("/services");
-        setServices((res.data.data || []).slice(0, 8));
+        setServices(res.data.data.slice(0, 8));
       } catch (error) {
-        console.error("Hizmetler yüklenemedi:", error);
+        console.error("Hizmetler yüklenemedi");
       } finally {
         setLoadingServices(false);
       }
     };
-
     fetchServices();
   }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    const query = searchTerm.trim();
-    if (!query) return;
-
-    const params = new URLSearchParams({ search: query });
-    navigate(`/services?${params.toString()}`);
+    if (!searchTerm.trim()) return;
+    navigate(`/services?search=${searchTerm}`);
   };
 
   const handlePurchase = async (plan) => {
@@ -108,31 +96,16 @@ const Home = () => {
     }
   };
 
-  const getServiceId = (service) => service?._id || service?.id;
-
-  const getWizardPath = (service) => {
-    const serviceId = getServiceId(service);
-    if (serviceId) return `/create-request/${serviceId}`;
-
-    const params = new URLSearchParams({ search: service?.name || "" });
-    return `/services?${params.toString()}`;
-  };
-
-  const getIcon = (service) => {
-    const text = `${service?.slug || ""} ${service?.name || ""}`.toLocaleLowerCase("tr");
-    const props = { size: 26, strokeWidth: 1.6, "aria-hidden": "true" };
-
-    if (text.includes("mobil") || text.includes("app")) return <Smartphone {...props} />;
-    if (text.includes("web") || text.includes("yazılım") || text.includes("kod")) return <Code {...props} />;
-    if (text.includes("tasarım") || text.includes("logo") || text.includes("grafik")) return <PenTool {...props} />;
-    if (text.includes("veri") || text.includes("data")) return <Database {...props} />;
-    if (text.includes("seo") || text.includes("pazarlama")) return <Globe {...props} />;
-    if (text.includes("güvenlik") || text.includes("siber")) return <Shield {...props} />;
+  const getIcon = (name) => {
+    const n = name.toLowerCase();
+    const props = { size: 24, strokeWidth: 1.5, "aria-hidden": "true" };
+    if (n.includes("mobil")) return <Smartphone {...props} />;
+    if (n.includes("web") || n.includes("yazılım")) return <Code {...props} />;
+    if (n.includes("tasarım") || n.includes("logo")) return <PenTool {...props} />;
+    if (n.includes("veri")) return <Database {...props} />;
+    if (n.includes("seo")) return <Globe {...props} />;
     return <Cpu {...props} />;
   };
-
-  const featuredServices = useMemo(() => services.slice(0, 6), [services]);
-  const quickServices = useMemo(() => services.slice(0, 8), [services]);
 
   const jsonLdData = {
     "@context": "https://schema.org",
@@ -165,7 +138,10 @@ const Home = () => {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#f7f7f2] text-slate-950 font-sans selection:bg-[#c9ff2a] selection:text-black">
+    <main
+      className="min-h-screen bg-white text-zinc-900 selection:bg-zinc-900 selection:text-white"
+      style={{ fontFamily: "'Inter', sans-serif" }}
+    >
       <Helmet>
         <title>Fırsatİş | Projeleriniz İçin Uzman Freelancer Platformu</title>
         <meta
@@ -175,6 +151,13 @@ const Home = () => {
         <meta
           name="keywords"
           content="freelancer, yazılım uzmanı, web tasarım, seo hizmeti, iş ilanı ver, uzman bul, react geliştirici, logo tasarım"
+        />
+        {/* Inter Fontu Entegrasyonu */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet"
         />
         <link rel="canonical" href="https://firsatis.com/" />
         <meta name="robots" content="index, follow" />
@@ -190,395 +173,245 @@ const Home = () => {
           property="og:image"
           content="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1200"
         />
-        <meta property="og:site_name" content="Fırsatİş" />
-        <meta property="og:locale" content="tr_TR" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Fırsatİş - Teknoloji Uzmanlarını Bulun" />
-        <meta name="twitter:description" content="Projeleriniz için doğru uzmanı burada bulun." />
-        <meta
-          name="twitter:image"
-          content="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1200"
-        />
         <script type="application/ld+json">{JSON.stringify(jsonLdData)}</script>
       </Helmet>
 
-      {/* HERO */}
-      <section className="relative px-5 pt-10 pb-20 md:px-8 md:pt-20 lg:pb-28" aria-label="Giriş Bölümü">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-[720px] w-[720px] -translate-x-1/2 rounded-full bg-[#dfff3f]/40 blur-3xl" />
-          <div className="absolute -right-32 top-32 h-96 w-96 rounded-full bg-blue-300/30 blur-3xl" />
-          <div className="absolute -left-32 bottom-0 h-96 w-96 rounded-full bg-purple-300/30 blur-3xl" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.10)_1px,transparent_0)] [background-size:28px_28px] opacity-40" />
-        </div>
+      {/* --- HERO SECTION --- */}
+      <section className="relative pt-20 pb-32 px-6 overflow-hidden" aria-label="Giriş Bölümü">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+          <div className="z-10 space-y-8 order-2 lg:order-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-600 text-xs font-semibold tracking-wide">
+              <span className="w-2 h-2 rounded-full bg-zinc-900 animate-pulse"></span>
+              Teknoloji Ekosistemi
+            </div>
 
-        <div className="mx-auto max-w-7xl">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="relative z-10">
-              <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-black/10 bg-white/70 px-4 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-slate-600 shadow-sm backdrop-blur-xl">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black text-white">
-                  <Sparkles size={14} aria-hidden="true" />
-                </span>
-                Freelancer pazaryeri
-              </div>
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.05] text-zinc-900">
+              Projeleriniz için <br />
+              <span className="text-zinc-500">doğru uzmanı</span> <br />
+              burada bulun.
+            </h1>
 
-              <h1 className="max-w-4xl text-5xl font-black leading-[0.95] tracking-[-0.08em] text-slate-950 md:text-7xl xl:text-8xl">
-                Projeni anlat,
-                <span className="relative mx-2 inline-block">
-                  <span className="absolute inset-x-0 bottom-2 -z-10 h-5 rounded-full bg-[#c9ff2a] md:bottom-3 md:h-8" />
-                  uzmanı
-                </span>
-                sistem eşleştirsin.
-              </h1>
+            <p className="text-lg text-zinc-500 max-w-lg font-normal leading-relaxed">
+              Yazılım, tasarım ve veri biliminde onaylı uzmanlarla çalışarak
+              işinizi bir sonraki seviyeye taşıyın.
+            </p>
 
-              <p className="mt-8 max-w-2xl text-lg font-medium leading-8 text-slate-600 md:text-xl">
-                Yazılım, tasarım, SEO ve veri projeleri için doğru kategoriyi seçin;
-                talep sihirbazı ihtiyacınızı adım adım netleştirsin.
-              </p>
-
+            <div className="max-w-lg pt-4">
               <form
                 onSubmit={handleSearch}
-                className="mt-10 max-w-2xl rounded-[2rem] border border-white/70 bg-white/85 p-2 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl"
+                className="bg-white flex items-center shadow-sm border border-zinc-200 p-1.5 rounded-2xl focus-within:border-zinc-400 focus-within:ring-4 focus-within:ring-zinc-100 transition-all"
                 role="search"
               >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <label htmlFor="search-input" className="sr-only">
-                    Uzman veya hizmet arayın
-                  </label>
-                  <div className="flex flex-1 items-center gap-3 px-4">
-                    <Search size={22} className="text-slate-400" aria-hidden="true" />
-                    <input
-                      id="search-input"
-                      name="q"
-                      type="search"
-                      placeholder="Web sitesi, logo, mobil uygulama..."
-                      className="h-16 w-full bg-transparent text-base font-bold text-slate-950 outline-none placeholder:text-slate-300 md:text-lg"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      autoComplete="off"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    aria-label="Arama yap"
-                    className="group inline-flex h-16 items-center justify-center gap-2 rounded-[1.4rem] bg-slate-950 px-8 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-blue-600 active:scale-95"
-                  >
-                    Ara
-                    <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
-                  </button>
+                <div className="pl-4 text-zinc-400">
+                  <Search size={20} />
                 </div>
-              </form>
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                {loadingServices
-                  ? [1, 2, 3, 4].map((item) => (
-                      <span key={item} className="h-11 w-28 animate-pulse rounded-full bg-white/60" />
-                    ))
-                  : quickServices.slice(0, 5).map((service) => (
-                      <Link
-                        key={getServiceId(service)}
-                        to={getWizardPath(service)}
-                        className="group inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/75 px-4 py-3 text-sm font-black text-slate-700 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:border-black hover:bg-black hover:text-white"
-                        title={`${service.name} talep sihirbazını aç`}
-                        aria-label={`${service.name} hizmeti için talep oluştur`}
-                      >
-                        {service.name}
-                        <ArrowUpRight size={15} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
-                      </Link>
-                    ))}
-              </div>
-            </div>
-
-            <div className="relative min-h-[560px] lg:min-h-[680px]">
-              <div className="absolute left-4 top-2 w-[78%] rotate-[-7deg] rounded-[2.5rem] border border-white/60 bg-white/55 p-3 shadow-2xl backdrop-blur-xl md:left-10">
-                <img
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1600&auto=format&fit=crop"
-                  className="h-[420px] w-full rounded-[2rem] object-cover md:h-[520px]"
-                  alt="Bilgisayar başında çalışan profesyonel yazılım ve tasarım uzmanı"
-                  width="620"
-                  height="620"
-                  loading="eager"
-                  decoding="async"
+                <label htmlFor="search-input" className="sr-only">
+                  Uzman veya hizmet arayın
+                </label>
+                <input
+                  id="search-input"
+                  name="q"
+                  type="text"
+                  placeholder="Yazılım, Tasarım veya SEO..."
+                  className="bg-transparent w-full px-4 py-3 outline-none text-base font-medium placeholder:text-zinc-400"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  autoComplete="off"
                 />
-              </div>
-
-              <div className="absolute right-0 top-16 w-[68%] rounded-[2rem] border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_30px_90px_rgba(15,23,42,0.35)] md:right-2">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Canlı akış</p>
-                    <h2 className="mt-1 text-xl font-black tracking-tight">Yeni talepler</h2>
-                  </div>
-                  <span className="rounded-full bg-[#c9ff2a] px-3 py-1 text-[11px] font-black text-black">Aktif</span>
-                </div>
-
-                <div className="space-y-3">
-                  {[
-                    ["Web arayüz", "3 teklif geldi"],
-                    ["Logo tasarım", "Sihirbaz tamamlandı"],
-                    ["SEO analizi", "Uzman eşleşti"],
-                  ].map(([title, status]) => (
-                    <div key={title} className="flex items-center justify-between rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-950">
-                          <Layers size={18} aria-hidden="true" />
-                        </span>
-                        <div>
-                          <p className="text-sm font-black">{title}</p>
-                          <p className="text-xs font-semibold text-slate-400">{status}</p>
-                        </div>
-                      </div>
-                      <ArrowUpRight size={18} className="text-[#c9ff2a]" aria-hidden="true" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="absolute bottom-8 left-0 w-[58%] rounded-[2rem] border border-black/10 bg-[#c9ff2a] p-6 shadow-2xl md:left-6">
-                <p className="text-[11px] font-black uppercase tracking-[0.28em] text-black/50">Ortalama süreç</p>
-                <div className="mt-4 flex items-end gap-3">
-                  <span className="text-6xl font-black tracking-tighter">3</span>
-                  <span className="pb-3 text-lg font-black">adımda talep</span>
-                </div>
-                <p className="mt-3 text-sm font-bold leading-6 text-black/65">
-                  Hizmet seç, detayları doldur, uzmanlardan teklif al.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SERVICE WIZARD */}
-      <section className="px-5 py-12 md:px-8 md:py-20" aria-labelledby="wizard-heading">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] bg-slate-950 text-white shadow-[0_40px_120px_rgba(15,23,42,0.30)] md:rounded-[4rem]">
-          <div className="grid gap-0 lg:grid-cols-[0.85fr_1.15fr]">
-            <div className="relative p-8 md:p-12 lg:p-16">
-              <div className="absolute -left-24 -top-24 h-64 w-64 rounded-full bg-[#c9ff2a]/20 blur-3xl" />
-              <div className="relative z-10">
-                <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-slate-300 ring-1 ring-white/10">
-                  <span className="h-2 w-2 rounded-full bg-[#c9ff2a]" />
-                  Talep sihirbazı
-                </div>
-                <h2 id="wizard-heading" className="text-4xl font-black leading-[0.95] tracking-[-0.06em] md:text-6xl">
-                  Hizmet seç, talebi başlat.
-                </h2>
-                <p className="mt-6 max-w-md text-base font-medium leading-7 text-slate-400 md:text-lg">
-                  Aşağıdaki her hizmet direkt ilgili talep oluşturma sihirbazına gider.
-                  Kullanıcı önce katalogda kaybolmaz, doğrudan doğru adıma geçer.
-                </p>
-
-                <Link
-                  to="/services"
-                  className="mt-10 inline-flex items-center gap-2 rounded-full bg-white px-5 py-4 text-sm font-black text-slate-950 transition-all hover:-translate-y-0.5 hover:bg-[#c9ff2a]"
+                <button
+                  type="submit"
+                  aria-label="Arama yap"
+                  className="bg-zinc-900 text-white px-8 py-3.5 rounded-xl font-medium hover:bg-zinc-800 transition-colors active:scale-[0.98]"
                 >
-                  Tüm hizmetleri gör
-                  <ArrowRight size={18} aria-hidden="true" />
-                </Link>
+                  Ara
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div className="relative order-1 lg:order-2">
+            <div className="relative z-10 w-full aspect-[4/3] lg:aspect-square rounded-[2rem] overflow-hidden shadow-2xl shadow-zinc-200">
+              <img
+                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=2000&auto=format&fit=crop"
+                className="w-full h-full object-cover scale-105 hover:scale-100 transition-transform duration-1000 ease-out"
+                alt="Bilgisayar başında çalışan profesyonel yazılım ve tasarım uzmanı"
+                loading="eager"
+              />
+            </div>
+            
+            <div className="absolute -bottom-6 -left-6 bg-white p-5 rounded-2xl shadow-xl z-20 border border-zinc-100 hidden sm:flex items-center gap-4">
+              <div className="w-12 h-12 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-900">
+                <ArrowUpRight size={20} strokeWidth={2.5} aria-hidden="true" />
+              </div>
+              <div>
+                <div className="text-sm font-bold tracking-tight text-zinc-900">
+                  Onaylı Uzmanlar
+                </div>
+                <div className="text-xs text-zinc-500 font-medium mt-0.5">
+                  Bugün 12 yeni ilan
+                </div>
               </div>
             </div>
-
-            <div className="grid gap-px bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
-              {loadingServices
-                ? Array(6)
-                    .fill(0)
-                    .map((_, index) => (
-                      <div key={index} className="min-h-[220px] animate-pulse bg-white/5 p-6" />
-                    ))
-                : featuredServices.map((service, index) => (
-                    <Link
-                      key={getServiceId(service)}
-                      to={getWizardPath(service)}
-                      className="group relative min-h-[240px] overflow-hidden bg-slate-950 p-6 transition-all hover:bg-white hover:text-slate-950"
-                      aria-label={`${service.name} hizmeti için talep sihirbazını başlat`}
-                      title={`${service.name} talep sihirbazını başlat`}
-                    >
-                      <div className="absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-[#c9ff2a]/0 blur-2xl transition-all group-hover:bg-[#c9ff2a]/80" />
-                      <div className="relative z-10 flex h-full flex-col justify-between">
-                        <div>
-                          <div className="mb-6 flex items-center justify-between">
-                            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white ring-1 ring-white/10 transition-all group-hover:bg-slate-950 group-hover:text-white">
-                              {getIcon(service)}
-                            </span>
-                            <span className="text-xs font-black text-slate-500 transition-colors group-hover:text-slate-400">
-                              0{index + 1}
-                            </span>
-                          </div>
-                          <h3 className="text-2xl font-black tracking-tight">{service.name}</h3>
-                          <p className="mt-3 line-clamp-2 text-sm font-medium leading-6 text-slate-400 transition-colors group-hover:text-slate-600">
-                            {service.description || "Bu hizmet için talep detaylarınızı sihirbaz üzerinden oluşturun."}
-                          </p>
-                        </div>
-
-                        <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-5 transition-colors group-hover:border-slate-200">
-                          <span className="text-sm font-black">Sihirbaza git</span>
-                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-950 transition-all group-hover:rotate-45 group-hover:bg-slate-950 group-hover:text-white">
-                            <ArrowUpRight size={18} aria-hidden="true" />
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-            </div>
           </div>
         </div>
       </section>
 
-      {/* CATEGORIES */}
-      <section className="px-5 py-12 md:px-8 md:py-20" aria-labelledby="categories-heading">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-600">Popüler kategoriler</p>
-              <h2 id="categories-heading" className="mt-3 text-4xl font-black tracking-[-0.05em] text-slate-950 md:text-6xl">
-                İşini anlatacağın doğru kapı.
-              </h2>
-            </div>
-            <Link
-              to="/services"
-              className="group inline-flex items-center gap-2 text-sm font-black text-slate-950"
-              title="Tüm hizmet kategorilerini görüntüle"
+      {/* --- KATEGORİLER --- */}
+      <section className="max-w-7xl mx-auto py-24 px-6 bg-zinc-50 rounded-[3rem] my-12" aria-labelledby="categories-heading">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+          <h2 id="categories-heading" className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900">
+            Kategoriler
+          </h2>
+          <Link
+            to="/services"
+            className="text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition-colors group flex items-center gap-1"
+            title="Tüm hizmet kategorilerini görüntüle"
+          >
+            Tümünü Gör
+            <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 min-h-[250px]">
+          {loadingServices
+            ? Array(4).fill(0).map((_, i) => (
+                <div key={i} className="bg-white rounded-3xl p-8 border border-zinc-100 animate-pulse h-56"></div>
+              ))
+            : services.map((service) => (
+                <Link
+                  key={service._id}
+                  to={`/create-request/${service._id}`}
+                  className="group bg-white p-8 rounded-3xl hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 border border-zinc-100 hover:border-zinc-300 relative flex flex-col"
+                >
+                  <div className="w-12 h-12 bg-zinc-50 rounded-xl flex items-center justify-center text-zinc-600 group-hover:bg-zinc-900 group-hover:text-white transition-colors mb-8">
+                    {getIcon(service.name)}
+                  </div>
+                  <h3 className="text-lg font-semibold tracking-tight text-zinc-900 mb-2 mt-auto">
+                    {service.name}
+                  </h3>
+                  <p className="text-sm text-zinc-500 font-normal">
+                    İşin ehli profesyoneller.
+                  </p>
+                </Link>
+              ))}
+        </div>
+      </section>
+
+      {/* --- PAKETLER (Grid Yapısı) --- */}
+      <section className="py-32 px-6 max-w-7xl mx-auto" aria-labelledby="pricing-heading">
+        <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
+          <h2 id="pricing-heading" className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900">
+            Teklif Paketleri
+          </h2>
+          <p className="text-zinc-500 text-lg font-normal">
+            Projeler için rekabete hazır olun. Size en uygun paketi seçin ve hemen teklif vermeye başlayın.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {plans.map((plan) => (
+            <div
+              key={plan.id}
+              className={`relative flex flex-col rounded-3xl p-8 transition-all duration-300 ${plan.bg} ${
+                plan.popular 
+                  ? "border-2 border-zinc-900 shadow-2xl shadow-zinc-900/10 scale-100 md:scale-105 z-10" 
+                  : "border border-zinc-200 hover:border-zinc-300"
+              }`}
             >
-              Tüm kategoriler
-              <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {loadingServices
-              ? Array(4)
-                  .fill(0)
-                  .map((_, i) => (
-                    <div key={i} className="h-72 animate-pulse rounded-[2.5rem] bg-white/70" />
-                  ))
-              : quickServices.map((service, index) => (
-                  <Link
-                    key={getServiceId(service)}
-                    to={getWizardPath(service)}
-                    className={`group relative overflow-hidden rounded-[2.5rem] border border-black/5 bg-white p-7 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_25px_70px_rgba(15,23,42,0.14)] ${
-                      index === 0 || index === 5 ? "md:col-span-2" : ""
-                    }`}
-                    aria-label={`${service.name} kategorisinde talep oluştur`}
-                    title={`${service.name} talep sihirbazını aç`}
-                  >
-                    <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#c9ff2a]/0 blur-2xl transition-all duration-500 group-hover:bg-[#c9ff2a]/70" />
-                    <div className="relative z-10 flex min-h-[230px] flex-col justify-between">
-                      <div>
-                        <div className="mb-8 flex items-center justify-between">
-                          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-slate-950 transition-all group-hover:rotate-[-6deg] group-hover:bg-slate-950 group-hover:text-white">
-                            {getIcon(service)}
-                          </div>
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-black text-slate-400 transition-all group-hover:bg-[#c9ff2a] group-hover:text-black">
-                            Talep aç
-                          </span>
-                        </div>
-                        <h3 className="text-2xl font-black tracking-tight text-slate-950">{service.name}</h3>
-                        <p className="mt-3 line-clamp-2 max-w-md text-sm font-medium leading-6 text-slate-500">
-                          {service.description || "Uzmanlardan teklif almak için bu kategoride talep oluşturun."}
-                        </p>
-                      </div>
-
-                      <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-5">
-                        <span className="text-sm font-black text-slate-500 transition-colors group-hover:text-slate-950">
-                          Sihirbazı başlat
-                        </span>
-                        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-white transition-all group-hover:rotate-45 group-hover:bg-blue-600">
-                          <ArrowUpRight size={18} aria-hidden="true" />
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING */}
-      <section className="px-5 py-12 md:px-8 md:py-20" aria-labelledby="pricing-heading">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-12 max-w-3xl">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-purple-600">Teklif hakları</p>
-            <h2 id="pricing-heading" className="mt-3 text-4xl font-black tracking-[-0.05em] text-slate-950 md:text-6xl">
-              Uzmanlar için büyüme paketleri.
-            </h2>
-            <p className="mt-5 text-lg font-medium leading-8 text-slate-600">
-              Projeler için rekabete hazır olun. Size uygun paketi seçin ve hemen teklif vermeye başlayın.
-            </p>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            {plans.map((plan) => (
-              <article
-                key={plan.id}
-                className={`group relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br ${plan.bg} p-7 ring-1 ${plan.ring} transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_90px_rgba(15,23,42,0.14)]`}
-              >
-                {plan.popular && (
-                  <span className="absolute right-6 top-6 rounded-full bg-slate-950 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-white">
+              {plan.popular && (
+                <div className="absolute -top-4 left-0 right-0 flex justify-center">
+                  <span className="bg-zinc-900 text-white text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full">
                     En Popüler
                   </span>
-                )}
-
-                <div className="flex min-h-[460px] flex-col justify-between">
-                  <div>
-                    <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-3xl bg-white shadow-sm">
-                      {plan.icon}
-                    </div>
-                    <p className={`text-sm font-black uppercase tracking-[0.22em] ${plan.accent}`}>{plan.name}</p>
-                    <h3 className="mt-4 text-4xl font-black tracking-[-0.05em] text-slate-950">
-                      {plan.offers} adet teklif hakkı
-                    </h3>
-                    <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">{plan.description}</p>
-
-                    <ul className="mt-8 space-y-4">
-                      {[
-                        `${plan.offers} adet teklif hakkı`,
-                        "Öncelikli destek hattı",
-                        "Komisyon ödemesi yok",
-                      ].map((item) => (
-                        <li key={item} className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-green-600 shadow-sm">
-                            <Check size={15} strokeWidth={3} aria-hidden="true" />
-                          </span>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="mt-10">
-                    <div className="mb-6 flex items-end gap-2">
-                      <span className="text-5xl font-black tracking-tighter text-slate-950">₺{plan.price}</span>
-                      <span className="pb-2 text-sm font-bold text-slate-400">/ paket</span>
-                    </div>
-                    <button
-                      onClick={() => handlePurchase(plan)}
-                      aria-label={`${plan.name} paketini satın al - Fiyat: ₺${plan.price}`}
-                      className="group/btn inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-7 py-5 text-sm font-black text-white transition-all hover:bg-blue-600 active:scale-95"
-                    >
-                      Hemen Satın Al
-                      <ArrowRight size={18} className="transition-transform group-hover/btn:translate-x-1" aria-hidden="true" />
-                    </button>
-                  </div>
                 </div>
-              </article>
-            ))}
-          </div>
+              )}
+              
+              <div className="mb-8">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 ${plan.popular ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
+                  {plan.icon}
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${plan.popular ? 'text-white' : 'text-zinc-900'}`}>
+                  {plan.name}
+                </h3>
+                <p className={`text-sm min-h-[40px] leading-relaxed ${plan.popular ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  {plan.description}
+                </p>
+              </div>
+
+              <div className="mb-8">
+                <span className={`text-5xl font-extrabold tracking-tight ${plan.popular ? 'text-white' : 'text-zinc-900'}`}>
+                  ₺{plan.price}
+                </span>
+              </div>
+
+              <ul className="space-y-4 mb-10 flex-1">
+                <li className="flex items-center gap-3">
+                  <Check size={18} className={plan.popular ? 'text-white' : 'text-zinc-900'} />
+                  <span className={`text-sm font-medium ${plan.popular ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                    {plan.offers} Adet Teklif Hakkı
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Check size={18} className={plan.popular ? 'text-white' : 'text-zinc-900'} />
+                  <span className={`text-sm font-medium ${plan.popular ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                    Öncelikli Destek Hattı
+                  </span>
+                </li>
+                <li className="flex items-center gap-3 opacity-50">
+                  <Check size={18} className={plan.popular ? 'text-zinc-600' : 'text-zinc-400'} />
+                  <span className={`text-sm font-medium line-through ${plan.popular ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                    Komisyon Ödemesi
+                  </span>
+                </li>
+              </ul>
+
+              <button
+                onClick={() => handlePurchase(plan)}
+                aria-label={`${plan.name} paketini satın al - Fiyat: ₺${plan.price}`}
+                className={`w-full py-4 rounded-xl font-semibold transition-all active:scale-[0.98] ${
+                  plan.popular 
+                    ? "bg-white text-zinc-900 hover:bg-zinc-100" 
+                    : "bg-zinc-900 text-white hover:bg-zinc-800"
+                }`}
+              >
+                Hemen Satın Al
+              </button>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="px-5 py-12 md:px-8" role="contentinfo">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-8 rounded-[2rem] border border-black/5 bg-white/70 p-6 backdrop-blur md:flex-row md:items-center md:p-8">
-          <div>
-            <div className="text-3xl font-black tracking-[-0.08em] text-slate-950">firsatis.com</div>
-            <p className="mt-2 text-sm font-semibold text-slate-500">Projeyi doğru uzmanla buluşturan modern talep platformu.</p>
+      {/* --- FOOTER --- */}
+      <footer className="border-t border-zinc-100 bg-white" role="contentinfo">
+        <div className="max-w-7xl mx-auto py-12 px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+          
+          <div className="text-2xl font-extrabold tracking-tighter text-zinc-900">
+            fırsatiş<span className="text-zinc-400">.</span>
           </div>
-
-          <nav className="flex flex-wrap gap-4 text-[11px] font-black uppercase tracking-widest text-slate-500" aria-label="Alt menü">
-            {footerLinks.map((item) => (
-              <Link key={item.to} to={item.to} className="rounded-full bg-slate-100 px-4 py-3 transition-all hover:bg-slate-950 hover:text-white">
-                {item.label}
-              </Link>
-            ))}
+          
+          <nav className="flex gap-8 text-sm font-medium text-zinc-500">
+            <Link to="/sitemap" className="hover:text-zinc-900 transition-colors" title="Site Haritası">
+              Dizin
+            </Link>
+            <Link to="/privacy-policy" className="hover:text-zinc-900 transition-colors" title="Güvenlik Politikası">
+              Güvenlik
+            </Link>
+            <Link to="/kvkk" className="hover:text-zinc-900 transition-colors" title="Kişisel Verilerin Korunması">
+              KVKK
+            </Link>
           </nav>
+
+          {/* Dinamik GitHub Linki */}
+          <a
+            href={githubRepoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-zinc-400 hover:text-zinc-900 transition-colors text-sm font-medium"
+            title="Projeyi GitHub'da İncele"
+          >
+            <Github size={20} />
+            <span className="hidden sm:inline">Açık Kaynak</span>
+          </a>
         </div>
       </footer>
     </main>
