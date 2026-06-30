@@ -86,14 +86,13 @@ const Home = () => {
     navigate(`/services?search=${searchTerm}`);
   };
 
-  const handlePurchase = async (plan) => {
-    try {
-      await api.post("/auth/add-credits", { credits: plan.offers });
-      toast.success(`${plan.name} paketi tanımlandı!`, { icon: "💰" });
-      setTimeout(() => window.location.reload(), 2000);
-    } catch (error) {
-      toast.error("Ödeme işlemi şu an gerçekleştirilemiyor.");
-    }
+  // İstediğiniz doğrultusunda güncellenen fonksiyon
+  const handlePurchase = (plan) => {
+    // API isteği ve otomatik yükleme kaldırıldı. Sadece uyarı mesajı veriliyor.
+    toast.error("Ödeme sistemi henüz tanımlanmadı.", {
+      icon: "💳",
+      duration: 4000
+    });
   };
 
   const getIcon = (name) => {
@@ -113,7 +112,7 @@ const Home = () => {
     name: "Fırsatİş",
     url: "https://firsatis.com/",
     description:
-      "Yazılım, tasarım ve SEO projeleriniz için uzman freelancer platformu.",
+      "Yazılım, tasarım and SEO projeleriniz için uzman freelancer platformu.",
     potentialAction: {
       "@type": "SearchAction",
       target: "https://firsatis.com/services?search={search_term_string}",
