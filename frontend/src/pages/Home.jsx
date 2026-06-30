@@ -11,12 +11,12 @@ import {
   Globe,
   Database,
   Cpu,
-  ArrowRight,
   Check,
   Zap,
   Rocket,
   Crown,
   ArrowUpRight,
+  Github,
 } from "lucide-react";
 
 const Home = () => {
@@ -25,17 +25,19 @@ const Home = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
+  // GitHub Linkini dinamik bir değişkene atadık
+  const githubRepoUrl = "https://github.com/yunuscecen/service-marketplace";
+
+  // Tasarımı minimalize etmek için renkleri nötr/monokrom tonlara çektik
   const plans = [
     {
       id: "basic",
       name: "Başlangıç",
       offers: 4,
       price: 495,
-      icon: <Zap size={30} className="text-orange-500" aria-hidden="true" />,
-      bg: "bg-[#F2F6FF]",
-      accent: "text-blue-600",
-      border: "border-blue-100",
-      glow: "shadow-blue-100/70",
+      icon: <Zap size={24} className="text-zinc-500" aria-hidden="true" />,
+      bg: "bg-zinc-50",
+      accent: "text-zinc-600",
       description:
         "Sistemi denemek ve ilk projelerinize teklif vermek için ideal.",
     },
@@ -44,11 +46,9 @@ const Home = () => {
       name: "Profesyonel",
       offers: 8,
       price: 935,
-      icon: <Rocket size={30} className="text-blue-500" aria-hidden="true" />,
-      bg: "bg-[#F5FFF2]",
-      accent: "text-green-600",
-      border: "border-green-100",
-      glow: "shadow-green-100/70",
+      icon: <Rocket size={24} className="text-zinc-900" aria-hidden="true" />,
+      bg: "bg-zinc-900",
+      accent: "text-zinc-100",
       popular: true,
       description:
         "Düzenli iş alan teknoloji uzmanları için en çok tercih edilen paket.",
@@ -58,41 +58,11 @@ const Home = () => {
       name: "Kurumsal",
       offers: 12,
       price: 1375,
-      icon: <Crown size={30} className="text-purple-500" aria-hidden="true" />,
-      bg: "bg-[#FFF9F2]",
-      accent: "text-orange-600",
-      border: "border-orange-100",
-      glow: "shadow-orange-100/70",
+      icon: <Crown size={24} className="text-zinc-500" aria-hidden="true" />,
+      bg: "bg-white",
+      accent: "text-zinc-600",
       description:
         "Büyük ölçekli projeler ve ajanslar için yüksek kapasiteli çözüm.",
-    },
-  ];
-
-  const quickLinks = [
-    { label: "Hizmet keşfet", to: "/services" },
-    { label: "Uzman girişi", to: "/login" },
-    { label: "Hesap oluştur", to: "/register" },
-  ];
-
-  const footerLinks = [
-    { label: "Hizmetler", to: "/services" },
-    { label: "Giriş", to: "/login" },
-    { label: "Kayıt", to: "/register" },
-    { label: "Paketler", to: "/dashboard/packages" },
-  ];
-
-  const processSteps = [
-    {
-      title: "İhtiyacını seç",
-      text: "Web, mobil, tasarım, SEO veya veri alanındaki doğru kategoriyi belirle.",
-    },
-    {
-      title: "Talebini oluştur",
-      text: "Kısa proje detaylarını gönder; uzmanlar talebini görmeye başlasın.",
-    },
-    {
-      title: "Teklifleri değerlendir",
-      text: "Sana uygun uzmanla konuş, detayları netleştir ve projeyi başlat.",
     },
   ];
 
@@ -107,17 +77,13 @@ const Home = () => {
         setLoadingServices(false);
       }
     };
-
     fetchServices();
   }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    const query = searchTerm.trim();
-    if (!query) return;
-
-    const params = new URLSearchParams({ search: query });
-    navigate(`/services?${params.toString()}`);
+    if (!searchTerm.trim()) return;
+    navigate(`/services?search=${searchTerm}`);
   };
 
   const handlePurchase = async (plan) => {
@@ -130,20 +96,15 @@ const Home = () => {
     }
   };
 
-  const getIcon = (name = "") => {
+  const getIcon = (name) => {
     const n = name.toLowerCase();
-    const props = { size: 24, strokeWidth: 1.7, "aria-hidden": "true" };
+    const props = { size: 24, strokeWidth: 1.5, "aria-hidden": "true" };
     if (n.includes("mobil")) return <Smartphone {...props} />;
     if (n.includes("web") || n.includes("yazılım")) return <Code {...props} />;
     if (n.includes("tasarım") || n.includes("logo")) return <PenTool {...props} />;
     if (n.includes("veri")) return <Database {...props} />;
     if (n.includes("seo")) return <Globe {...props} />;
     return <Cpu {...props} />;
-  };
-
-  const getServiceHref = (service) => {
-    const serviceId = service?._id || service?.id;
-    return serviceId ? `/create-request/${serviceId}` : "/services";
   };
 
   const jsonLdData = {
@@ -177,7 +138,10 @@ const Home = () => {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#f8fbff] text-slate-950 font-sans selection:bg-[#c9ff2a] selection:text-black">
+    <main
+      className="min-h-screen bg-white text-zinc-900 selection:bg-zinc-900 selection:text-white"
+      style={{ fontFamily: "'Inter', sans-serif" }}
+    >
       <Helmet>
         <title>Fırsatİş | Projeleriniz İçin Uzman Freelancer Platformu</title>
         <meta
@@ -187,6 +151,13 @@ const Home = () => {
         <meta
           name="keywords"
           content="freelancer, yazılım uzmanı, web tasarım, seo hizmeti, iş ilanı ver, uzman bul, react geliştirici, logo tasarım"
+        />
+        {/* Inter Fontu Entegrasyonu */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet"
         />
         <link rel="canonical" href="https://firsatis.com/" />
         <meta name="robots" content="index, follow" />
@@ -202,161 +173,82 @@ const Home = () => {
           property="og:image"
           content="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1200"
         />
-        <meta property="og:site_name" content="Fırsatİş" />
-        <meta property="og:locale" content="tr_TR" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Fırsatİş - Teknoloji Uzmanlarını Bulun" />
-        <meta name="twitter:description" content="Projeleriniz için doğru uzmanı burada bulun." />
-        <meta
-          name="twitter:image"
-          content="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1200"
-        />
         <script type="application/ld+json">{JSON.stringify(jsonLdData)}</script>
       </Helmet>
 
-      <section className="relative px-6 pt-16 pb-20 md:pt-24 md:pb-28" aria-label="Giriş Bölümü">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-blue-200/50 blur-3xl" />
-          <div className="absolute top-20 -left-28 h-80 w-80 rounded-full bg-[#c9ff2a]/30 blur-3xl" />
-          <div className="absolute right-0 bottom-10 h-96 w-96 rounded-full bg-indigo-200/50 blur-3xl" />
-        </div>
-
-        <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="relative z-10 order-2 space-y-9 lg:order-1">
-            <div className="inline-flex items-center gap-3 rounded-full border border-white/70 bg-white/80 px-4 py-2 text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 shadow-sm backdrop-blur">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#c9ff2a] opacity-75" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#c9ff2a]" />
-              </span>
-              Teknoloji ekosistemi
+      {/* --- HERO SECTION --- */}
+      <section className="relative pt-20 pb-32 px-6 overflow-hidden" aria-label="Giriş Bölümü">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+          <div className="z-10 space-y-8 order-2 lg:order-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-600 text-xs font-semibold tracking-wide">
+              <span className="w-2 h-2 rounded-full bg-zinc-900 animate-pulse"></span>
+              Teknoloji Ekosistemi
             </div>
 
-            <div className="space-y-6">
-              <h1 className="max-w-5xl text-5xl font-black leading-[0.98] tracking-[-0.06em] text-slate-950 md:text-7xl xl:text-8xl">
-                Projen için doğru uzmanı
-                <span className="relative mx-2 inline-block">
-                  <span className="absolute inset-x-0 bottom-2 -z-10 h-5 rounded-full bg-[#c9ff2a] md:bottom-4 md:h-7" />
-                  bugün bul.
-                </span>
-              </h1>
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.05] text-zinc-900">
+              Projeleriniz için <br />
+              <span className="text-zinc-500">doğru uzmanı</span> <br />
+              burada bulun.
+            </h1>
 
-              <p className="max-w-2xl text-lg font-medium leading-8 text-slate-600 md:text-xl">
-                Yazılım, tasarım, SEO ve veri alanında ihtiyacını anlat; onaylı uzmanlardan hızlıca teklif al ve işini güvenle başlat.
-              </p>
-            </div>
+            <p className="text-lg text-zinc-500 max-w-lg font-normal leading-relaxed">
+              Yazılım, tasarım ve veri biliminde onaylı uzmanlarla çalışarak
+              işinizi bir sonraki seviyeye taşıyın.
+            </p>
 
-            <form
-              onSubmit={handleSearch}
-              className="group max-w-2xl rounded-[2rem] border border-white/70 bg-white/85 p-2 shadow-[0_30px_90px_rgba(15,23,42,0.10)] backdrop-blur-xl transition-all focus-within:border-blue-200 focus-within:shadow-[0_30px_100px_rgba(37,99,235,0.16)]"
-              role="search"
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="max-w-lg pt-4">
+              <form
+                onSubmit={handleSearch}
+                className="bg-white flex items-center shadow-sm border border-zinc-200 p-1.5 rounded-2xl focus-within:border-zinc-400 focus-within:ring-4 focus-within:ring-zinc-100 transition-all"
+                role="search"
+              >
+                <div className="pl-4 text-zinc-400">
+                  <Search size={20} />
+                </div>
                 <label htmlFor="search-input" className="sr-only">
                   Uzman veya hizmet arayın
                 </label>
-                <div className="flex flex-1 items-center gap-3 px-4">
-                  <Search size={22} className="text-slate-300 transition-colors group-focus-within:text-blue-500" aria-hidden="true" />
-                  <input
-                    id="search-input"
-                    name="q"
-                    type="text"
-                    placeholder="Web sitesi, mobil uygulama, logo, SEO..."
-                    className="w-full bg-transparent py-4 text-base font-semibold text-slate-900 outline-none placeholder:text-slate-300 md:text-lg"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    autoComplete="off"
-                  />
-                </div>
+                <input
+                  id="search-input"
+                  name="q"
+                  type="text"
+                  placeholder="Yazılım, Tasarım veya SEO..."
+                  className="bg-transparent w-full px-4 py-3 outline-none text-base font-medium placeholder:text-zinc-400"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  autoComplete="off"
+                />
                 <button
                   type="submit"
                   aria-label="Arama yap"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-7 py-4 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-blue-600 active:scale-95 sm:text-base"
+                  className="bg-zinc-900 text-white px-8 py-3.5 rounded-xl font-medium hover:bg-zinc-800 transition-colors active:scale-[0.98]"
                 >
                   Ara
-                  <ArrowRight size={18} aria-hidden="true" />
                 </button>
-              </div>
-            </form>
-
-            <div className="flex flex-wrap gap-3">
-              {quickLinks.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className="rounded-full border border-slate-200 bg-white/70 px-5 py-3 text-sm font-black text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-950 hover:text-slate-950"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="grid max-w-2xl grid-cols-3 gap-3 pt-2">
-              <div className="rounded-3xl border border-white bg-white/80 p-5 shadow-sm">
-                <div className="text-2xl font-black tracking-tighter text-slate-950">{services.length || 8}+</div>
-                <div className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-400">Kategori</div>
-              </div>
-              <div className="rounded-3xl border border-white bg-white/80 p-5 shadow-sm">
-                <div className="text-2xl font-black tracking-tighter text-slate-950">Dakikalar</div>
-                <div className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-400">İçinde talep</div>
-              </div>
-              <div className="rounded-3xl border border-white bg-white/80 p-5 shadow-sm">
-                <div className="text-2xl font-black tracking-tighter text-slate-950">0%</div>
-                <div className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-400">Komisyon</div>
-              </div>
+              </form>
             </div>
           </div>
 
-          <div className="relative order-1 mx-auto w-full max-w-xl lg:order-2">
-            <div className="absolute -inset-4 rounded-[3.5rem] bg-gradient-to-br from-blue-200/60 via-white to-[#c9ff2a]/50 blur-2xl" />
-            <div className="relative overflow-hidden rounded-[3rem] border border-white/70 bg-white p-3 shadow-[0_40px_120px_rgba(15,23,42,0.18)] rotate-1 transition-transform duration-700 hover:rotate-0">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[2.5rem] bg-slate-100">
-                <img
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=2000&auto=format&fit=crop"
-                  className="h-full w-full object-cover"
-                  alt="Bilgisayar başında çalışan profesyonel yazılım ve tasarım uzmanı"
-                  width="600"
-                  height="750"
-                  loading="eager"
-                  decoding="async"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/10 to-transparent" />
-
-                <div className="absolute bottom-5 left-5 right-5 rounded-[2rem] border border-white/20 bg-white/15 p-5 text-white shadow-2xl backdrop-blur-xl">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-white/60">Canlı talep akışı</p>
-                      <h2 className="mt-2 text-2xl font-black tracking-tight">Yeni proje yayında</h2>
-                    </div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c9ff2a] text-black">
-                      <ArrowUpRight size={23} aria-hidden="true" />
-                    </div>
-                  </div>
-                  <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-2xl bg-white/15 px-3 py-3">
-                      <div className="text-lg font-black">Web</div>
-                      <div className="text-[10px] font-bold text-white/55">Kategori</div>
-                    </div>
-                    <div className="rounded-2xl bg-white/15 px-3 py-3">
-                      <div className="text-lg font-black">4</div>
-                      <div className="text-[10px] font-bold text-white/55">Teklif</div>
-                    </div>
-                    <div className="rounded-2xl bg-white/15 px-3 py-3">
-                      <div className="text-lg font-black">Yeni</div>
-                      <div className="text-[10px] font-bold text-white/55">Durum</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <div className="relative order-1 lg:order-2">
+            <div className="relative z-10 w-full aspect-[4/3] lg:aspect-square rounded-[2rem] overflow-hidden shadow-2xl shadow-zinc-200">
+              <img
+                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=2000&auto=format&fit=crop"
+                className="w-full h-full object-cover scale-105 hover:scale-100 transition-transform duration-1000 ease-out"
+                alt="Bilgisayar başında çalışan profesyonel yazılım ve tasarım uzmanı"
+                loading="eager"
+              />
             </div>
-
-            <div className="absolute -right-3 top-10 hidden rounded-3xl border border-slate-100 bg-white p-5 shadow-2xl sm:block">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                  <Check size={20} strokeWidth={3} aria-hidden="true" />
+            
+            <div className="absolute -bottom-6 -left-6 bg-white p-5 rounded-2xl shadow-xl z-20 border border-zinc-100 hidden sm:flex items-center gap-4">
+              <div className="w-12 h-12 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-900">
+                <ArrowUpRight size={20} strokeWidth={2.5} aria-hidden="true" />
+              </div>
+              <div>
+                <div className="text-sm font-bold tracking-tight text-zinc-900">
+                  Onaylı Uzmanlar
                 </div>
-                <div>
-                  <div className="text-sm font-black">Onaylı uzmanlar</div>
-                  <div className="text-xs font-semibold text-slate-400">Güvenli iletişim</div>
+                <div className="text-xs text-zinc-500 font-medium mt-0.5">
+                  Bugün 12 yeni ilan
                 </div>
               </div>
             </div>
@@ -364,220 +256,163 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="px-6 py-8" aria-label="Platform bağlantıları">
-        <div className="mx-auto max-w-7xl rounded-[2rem] border border-slate-100 bg-white/70 p-4 shadow-sm backdrop-blur">
-          <div className="grid gap-3 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 sm:grid-cols-3">
-            <span>Yazılım projeleri</span>
-            <span>Marka ve tasarım işleri</span>
-            <span>SEO ve büyüme destekleri</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 py-24" aria-labelledby="categories-heading">
-        <div className="mb-12 flex flex-col gap-6 border-b border-slate-200/70 pb-10 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-2xl">
-            <p className="mb-3 text-xs font-black uppercase tracking-[0.32em] text-blue-600">Kategoriler</p>
-            <h2 id="categories-heading" className="text-4xl font-black tracking-[-0.04em] text-slate-950 md:text-6xl">
-              Hizmet seç, talebi başlat.
-            </h2>
-          </div>
+      {/* --- KATEGORİLER --- */}
+      <section className="max-w-7xl mx-auto py-24 px-6 bg-zinc-50 rounded-[3rem] my-12" aria-labelledby="categories-heading">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+          <h2 id="categories-heading" className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900">
+            Kategoriler
+          </h2>
           <Link
             to="/services"
-            className="inline-flex w-fit items-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:bg-blue-600"
+            className="text-sm font-semibold text-zinc-600 hover:text-zinc-900 transition-colors group flex items-center gap-1"
             title="Tüm hizmet kategorilerini görüntüle"
           >
             Tümünü Gör
-            <ArrowRight size={17} aria-hidden="true" />
+            <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </Link>
         </div>
 
-        <div className="grid min-h-[300px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 min-h-[250px]">
           {loadingServices
-            ? Array(8)
-                .fill(0)
-                .map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-64 animate-pulse rounded-[2.5rem] border border-white bg-white/70 shadow-sm"
-                  />
-                ))
-            : services.map((service, index) => (
+            ? Array(4).fill(0).map((_, i) => (
+                <div key={i} className="bg-white rounded-3xl p-8 border border-zinc-100 animate-pulse h-56"></div>
+              ))
+            : services.map((service) => (
                 <Link
-                  key={service._id || service.id || service.name}
-                  to={getServiceHref(service)}
-                  className="group relative overflow-hidden rounded-[2.5rem] border border-white bg-white p-7 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-blue-100 hover:shadow-[0_30px_90px_rgba(37,99,235,0.12)]"
-                  aria-label={`${service.name} kategorisinde ilan oluştur`}
-                  title={`${service.name} hizmetleri`}
+                  key={service._id}
+                  to={`/create-request/${service._id}`}
+                  className="group bg-white p-8 rounded-3xl hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 border border-zinc-100 hover:border-zinc-300 relative flex flex-col"
                 >
-                  <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-blue-100 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
-                  <div className="relative flex h-full min-h-[210px] flex-col justify-between">
-                    <div>
-                      <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-50 text-slate-500 shadow-inner transition-all group-hover:bg-[#c9ff2a] group-hover:text-black">
-                        {getIcon(service.name)}
-                      </div>
-                      <h3 className="text-2xl font-black tracking-tight text-slate-950">
-                        {service.name}
-                      </h3>
-                      <p className="mt-3 text-sm font-medium leading-6 text-slate-500">
-                        {service.description || "İşin ehli profesyonellerden hızlı teklif alın."}
-                      </p>
-                    </div>
-                    <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-5">
-                      <span className="text-xs font-black uppercase tracking-[0.24em] text-slate-300">
-                        0{index + 1}
-                      </span>
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-white transition-all group-hover:rotate-[-20deg] group-hover:bg-blue-600">
-                        <ArrowUpRight size={18} aria-hidden="true" />
-                      </span>
-                    </div>
+                  <div className="w-12 h-12 bg-zinc-50 rounded-xl flex items-center justify-center text-zinc-600 group-hover:bg-zinc-900 group-hover:text-white transition-colors mb-8">
+                    {getIcon(service.name)}
                   </div>
+                  <h3 className="text-lg font-semibold tracking-tight text-zinc-900 mb-2 mt-auto">
+                    {service.name}
+                  </h3>
+                  <p className="text-sm text-zinc-500 font-normal">
+                    İşin ehli profesyoneller.
+                  </p>
                 </Link>
               ))}
         </div>
       </section>
 
-      <section className="px-6 py-10" aria-labelledby="process-heading">
-        <div className="mx-auto max-w-7xl rounded-[3rem] bg-slate-950 p-8 text-white shadow-[0_40px_120px_rgba(15,23,42,0.22)] md:p-14">
-          <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
-            <div>
-              <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-[#c9ff2a]">Nasıl çalışır?</p>
-              <h2 id="process-heading" className="text-4xl font-black tracking-[-0.04em] md:text-6xl">
-                Üç adımda doğru uzman.
-              </h2>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {processSteps.map((step, index) => (
-                <div key={step.title} className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
-                  <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-950 text-sm font-black">
-                    0{index + 1}
-                  </div>
-                  <h3 className="text-lg font-black">{step.title}</h3>
-                  <p className="mt-3 text-sm font-medium leading-6 text-white/55">{step.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 py-24" aria-labelledby="pricing-heading">
-        <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-2xl">
-            <p className="mb-3 text-xs font-black uppercase tracking-[0.32em] text-blue-600">Teklif paketleri</p>
-            <h2 id="pricing-heading" className="text-4xl font-black tracking-[-0.04em] text-slate-950 md:text-6xl">
-              Uzmanlar için net paketler.
-            </h2>
-            <p className="mt-5 text-lg font-medium leading-8 text-slate-500">
-              Projeler için rekabete hazır olun. Size en uygun paketi seçin ve hemen teklif vermeye başlayın.
-            </p>
-          </div>
-          <Link
-            to="/dashboard/packages"
-            className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700 transition-all hover:-translate-y-0.5 hover:border-slate-950 hover:text-slate-950"
-          >
-            Paketleri karşılaştır
-            <ArrowRight size={17} aria-hidden="true" />
-          </Link>
+      {/* --- PAKETLER (Grid Yapısı) --- */}
+      <section className="py-32 px-6 max-w-7xl mx-auto" aria-labelledby="pricing-heading">
+        <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
+          <h2 id="pricing-heading" className="text-4xl md:text-5xl font-bold tracking-tight text-zinc-900">
+            Teklif Paketleri
+          </h2>
+          <p className="text-zinc-500 text-lg font-normal">
+            Projeler için rekabete hazır olun. Size en uygun paketi seçin ve hemen teklif vermeye başlayın.
+          </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {plans.map((plan) => (
-            <article
+            <div
               key={plan.id}
-              className={`relative overflow-hidden rounded-[3rem] border ${plan.border} ${plan.bg} p-7 shadow-2xl ${plan.glow} transition-all duration-500 hover:-translate-y-2`}
+              className={`relative flex flex-col rounded-3xl p-8 transition-all duration-300 ${plan.bg} ${
+                plan.popular 
+                  ? "border-2 border-zinc-900 shadow-2xl shadow-zinc-900/10 scale-100 md:scale-105 z-10" 
+                  : "border border-zinc-200 hover:border-zinc-300"
+              }`}
             >
               {plan.popular && (
-                <div className="absolute right-6 top-6 rounded-full bg-slate-950 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white">
-                  En Popüler
+                <div className="absolute -top-4 left-0 right-0 flex justify-center">
+                  <span className="bg-zinc-900 text-white text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full">
+                    En Popüler
+                  </span>
                 </div>
               )}
-
-              <div className="mb-9 flex h-16 w-16 items-center justify-center rounded-3xl bg-white shadow-sm">
-                {plan.icon}
-              </div>
-
-              <div className="space-y-4">
-                <p className={`text-xs font-black uppercase tracking-[0.3em] ${plan.accent}`}>{plan.name}</p>
-                <h3 className="text-4xl font-black leading-tight tracking-[-0.04em] text-slate-950">
-                  {plan.offers} Adet Teklif Hakkı
+              
+              <div className="mb-8">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 ${plan.popular ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
+                  {plan.icon}
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${plan.popular ? 'text-white' : 'text-zinc-900'}`}>
+                  {plan.name}
                 </h3>
-                <p className="min-h-[72px] text-sm font-medium leading-6 text-slate-500">{plan.description}</p>
+                <p className={`text-sm min-h-[40px] leading-relaxed ${plan.popular ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  {plan.description}
+                </p>
               </div>
 
-              <div className="my-9 flex items-end gap-2">
-                <span className="text-6xl font-black tracking-[-0.08em] text-slate-950">₺{plan.price}</span>
-                <span className="pb-2 text-sm font-black uppercase tracking-widest text-slate-400">tek sefer</span>
+              <div className="mb-8">
+                <span className={`text-5xl font-extrabold tracking-tight ${plan.popular ? 'text-white' : 'text-zinc-900'}`}>
+                  ₺{plan.price}
+                </span>
               </div>
 
-              <ul className="mb-9 space-y-4">
-                <li className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-green-600">
-                    <Check size={16} strokeWidth={3} aria-hidden="true" />
+              <ul className="space-y-4 mb-10 flex-1">
+                <li className="flex items-center gap-3">
+                  <Check size={18} className={plan.popular ? 'text-white' : 'text-zinc-900'} />
+                  <span className={`text-sm font-medium ${plan.popular ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                    {plan.offers} Adet Teklif Hakkı
                   </span>
-                  {plan.offers} adet teklif hakkı
                 </li>
-                <li className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-green-600">
-                    <Check size={16} strokeWidth={3} aria-hidden="true" />
+                <li className="flex items-center gap-3">
+                  <Check size={18} className={plan.popular ? 'text-white' : 'text-zinc-900'} />
+                  <span className={`text-sm font-medium ${plan.popular ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                    Öncelikli Destek Hattı
                   </span>
-                  Öncelikli destek hattı
                 </li>
-                <li className="flex items-center gap-3 text-sm font-bold text-slate-400">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-300">
-                    <Check size={16} strokeWidth={3} aria-hidden="true" />
+                <li className="flex items-center gap-3 opacity-50">
+                  <Check size={18} className={plan.popular ? 'text-zinc-600' : 'text-zinc-400'} />
+                  <span className={`text-sm font-medium line-through ${plan.popular ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                    Komisyon Ödemesi
                   </span>
-                  <span className="line-through">Komisyon ödemesi</span>
                 </li>
               </ul>
 
               <button
                 onClick={() => handlePurchase(plan)}
                 aria-label={`${plan.name} paketini satın al - Fiyat: ₺${plan.price}`}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-8 py-5 text-base font-black text-white transition-all hover:bg-blue-600 active:scale-95"
+                className={`w-full py-4 rounded-xl font-semibold transition-all active:scale-[0.98] ${
+                  plan.popular 
+                    ? "bg-white text-zinc-900 hover:bg-zinc-100" 
+                    : "bg-zinc-900 text-white hover:bg-zinc-800"
+                }`}
               >
                 Hemen Satın Al
-                <ArrowRight size={18} aria-hidden="true" />
               </button>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="px-6 pb-24" aria-label="Başlangıç çağrısı">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-[3rem] bg-white p-8 shadow-[0_35px_100px_rgba(15,23,42,0.10)] md:p-14">
-          <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
-            <div>
-              <p className="mb-3 text-xs font-black uppercase tracking-[0.32em] text-blue-600">Başlamaya hazır mısınız?</p>
-              <h2 className="text-4xl font-black tracking-[-0.04em] text-slate-950 md:text-5xl">
-                Projeni birkaç dakika içinde yayına al.
-              </h2>
-              <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-slate-500">
-                Kategorini seç, proje ihtiyacını paylaş ve doğru uzmanlardan gelen teklifleri tek yerden yönet.
-              </p>
             </div>
-            <Link
-              to="/services"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#c9ff2a] px-8 py-5 text-base font-black text-black transition-all hover:-translate-y-0.5 hover:shadow-xl"
-            >
-              Hizmetleri keşfet
-              <ArrowRight size={18} aria-hidden="true" />
-            </Link>
-          </div>
+          ))}
         </div>
       </section>
 
-      <footer className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 border-t border-slate-200/70 px-6 py-14 md:flex-row" role="contentinfo">
-        <Link to="/" className="text-3xl font-black tracking-[-0.06em] text-slate-950">
-          firsatis.com
-        </Link>
-        <nav className="flex flex-wrap justify-center gap-4 text-[11px] font-black uppercase tracking-[0.24em] text-slate-400" aria-label="Alt menü">
-          {footerLinks.map((item) => (
-            <Link key={item.to} to={item.to} className="rounded-full px-3 py-2 transition-colors hover:text-slate-950">
-              {item.label}
+      {/* --- FOOTER --- */}
+      <footer className="border-t border-zinc-100 bg-white" role="contentinfo">
+        <div className="max-w-7xl mx-auto py-12 px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+          
+          <div className="text-2xl font-extrabold tracking-tighter text-zinc-900">
+            fırsatiş<span className="text-zinc-400">.</span>
+          </div>
+          
+          <nav className="flex gap-8 text-sm font-medium text-zinc-500">
+            <Link to="/sitemap" className="hover:text-zinc-900 transition-colors" title="Site Haritası">
+              Dizin
             </Link>
-          ))}
-        </nav>
+            <Link to="/privacy-policy" className="hover:text-zinc-900 transition-colors" title="Güvenlik Politikası">
+              Güvenlik
+            </Link>
+            <Link to="/kvkk" className="hover:text-zinc-900 transition-colors" title="Kişisel Verilerin Korunması">
+              KVKK
+            </Link>
+          </nav>
+
+          {/* Dinamik GitHub Linki */}
+          <a
+            href={githubRepoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-zinc-400 hover:text-zinc-900 transition-colors text-sm font-medium"
+            title="Projeyi GitHub'da İncele"
+          >
+            <Github size={20} />
+            <span className="hidden sm:inline">Açık Kaynak</span>
+          </a>
+        </div>
       </footer>
     </main>
   );
