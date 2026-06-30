@@ -34,7 +34,7 @@ const JobDetail = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
 
-  const hasCredits = user?.credits > 0;
+const hasCredits = Number(user?.offerLimit || 0) > 0;
 
   const [offerData, setOfferData] = useState({
     price: "",
@@ -106,25 +106,23 @@ const JobDetail = () => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!hasCredits) {
-      toast.error("Teklif verebilmek için paket satın almalısınız.");
-      return;
-    }
-    try {
-      await api.post("/offers", {
-        requestId: id,
-        price: offerData.price,
-        deliveryTime: offerData.deliveryTime,
-        message: offerData.message,
-      });
-      toast.success("Teklifiniz başarıyla gönderildi!");
-      window.location.reload();
-    } catch (error) {
-      toast.error(error.response?.data?.error || "Teklif gönderilemedi.");
-    }
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    await api.post("/offers", {
+      requestId: id,
+      price: offerData.price,
+      deliveryTime: offerData.deliveryTime,
+      message: offerData.message,
+    });
+
+    toast.success("Teklifiniz başarıyla gönderildi!");
+    window.location.reload();
+  } catch (error) {
+    toast.error(error.response?.data?.error || "Teklif gönderilemedi.");
+  }
+};
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
