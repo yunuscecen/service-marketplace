@@ -210,6 +210,12 @@ exports.acceptOffer = async (req, res, next) => {
         error: "Sadece yayındaki ilanlarda teklif kabul edilebilir.",
       });
     }
+    if (request.acceptedOffer || request.acceptedProvider) {
+  return res.status(400).json({
+    success: false,
+    error: "Bu ilan için zaten bir teklif kabul edilmiş.",
+  });
+}
 
     if (offer.status !== "pending") {
       return res.status(400).json({
