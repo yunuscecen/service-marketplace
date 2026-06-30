@@ -17,6 +17,10 @@ import {
   Rocket,
   Crown,
   ArrowUpRight,
+  Sparkles,
+  ShieldCheck,
+  MessageCircle,
+  Layers,
 } from "lucide-react";
 
 const Home = () => {
@@ -31,8 +35,9 @@ const Home = () => {
       name: "Başlangıç",
       offers: 4,
       price: 495,
-      icon: <Zap size={32} className="text-orange-500" aria-hidden="true" />,
-      bg: "bg-[#F2F6FF]",
+      icon: <Zap size={28} className="text-orange-500" aria-hidden="true" />,
+      bg: "from-blue-50 via-white to-indigo-50",
+      ring: "ring-blue-100",
       accent: "text-blue-600",
       description:
         "Sistemi denemek ve ilk projelerinize teklif vermek için ideal.",
@@ -42,8 +47,9 @@ const Home = () => {
       name: "Profesyonel",
       offers: 8,
       price: 935,
-      icon: <Rocket size={32} className="text-blue-500" aria-hidden="true" />,
-      bg: "bg-[#F5FFF2]",
+      icon: <Rocket size={28} className="text-blue-500" aria-hidden="true" />,
+      bg: "from-lime-50 via-white to-emerald-50",
+      ring: "ring-lime-200",
       accent: "text-green-600",
       popular: true,
       description:
@@ -54,53 +60,12 @@ const Home = () => {
       name: "Kurumsal",
       offers: 12,
       price: 1375,
-      icon: <Crown size={32} className="text-purple-500" aria-hidden="true" />,
-      bg: "bg-[#FFF9F2]",
-      accent: "text-orange-600",
+      icon: <Crown size={28} className="text-purple-500" aria-hidden="true" />,
+      bg: "from-purple-50 via-white to-orange-50",
+      ring: "ring-purple-100",
+      accent: "text-purple-600",
       description:
         "Büyük ölçekli projeler ve ajanslar için yüksek kapasiteli çözüm.",
-    },
-  ];
-
-  const stats = [
-    { value: "8+", label: "Aktif kategori" },
-    { value: "24s", label: "İçinde teklif akışı" },
-    { value: "0₺", label: "İlan yayınlama ücreti" },
-  ];
-
-  const steps = [
-    {
-      title: "İhtiyacını anlat",
-      desc: "Proje detaylarını birkaç adımda paylaş, doğru uzmanlar seni görsün.",
-      icon: <Search size={22} aria-hidden="true" />,
-    },
-    {
-      title: "Teklifleri karşılaştır",
-      desc: "Fiyat, süre ve uzman profiline göre en doğru seçimi yap.",
-      icon: <ArrowRight size={22} aria-hidden="true" />,
-    },
-    {
-      title: "Uzmanla iletişime geç",
-      desc: "Canlı mesajlaşma ile işi netleştir, güvenle ilerle.",
-      icon: <Check size={22} aria-hidden="true" />,
-    },
-  ];
-
-  const featuredCards = [
-    {
-      title: "Web geliştirme",
-      desc: "Kurumsal site, panel, landing page ve özel yazılım işleri.",
-      icon: <Code size={24} aria-hidden="true" />,
-    },
-    {
-      title: "Mobil uygulama",
-      desc: "iOS, Android ve hibrit uygulama ihtiyaçları.",
-      icon: <Smartphone size={24} aria-hidden="true" />,
-    },
-    {
-      title: "Marka & tasarım",
-      desc: "Logo, sosyal medya, arayüz ve reklam kreatifleri.",
-      icon: <PenTool size={24} aria-hidden="true" />,
     },
   ];
 
@@ -108,7 +73,7 @@ const Home = () => {
     const fetchServices = async () => {
       try {
         const res = await api.get("/services");
-        setServices(res.data.data.slice(0, 8));
+        setServices((res.data.data || []).slice(0, 8));
       } catch (error) {
         console.error("Hizmetler yüklenemedi");
       } finally {
@@ -135,18 +100,27 @@ const Home = () => {
     }
   };
 
-  const getIcon = (name) => {
+  const getIcon = (name = "") => {
     const n = name.toLowerCase();
-    const props = { size: 24, strokeWidth: 1.5, "aria-hidden": "true" };
+    const props = { size: 24, strokeWidth: 1.8, "aria-hidden": "true" };
 
     if (n.includes("mobil")) return <Smartphone {...props} />;
     if (n.includes("web") || n.includes("yazılım")) return <Code {...props} />;
-    if (n.includes("tasarım") || n.includes("logo"))
-      return <PenTool {...props} />;
+    if (n.includes("tasarım") || n.includes("logo")) return <PenTool {...props} />;
     if (n.includes("veri")) return <Database {...props} />;
     if (n.includes("seo")) return <Globe {...props} />;
 
     return <Cpu {...props} />;
+  };
+
+  const getServiceDescription = (service) => {
+    if (service?.description) return service.description;
+    return `${service?.name || "Bu hizmet"} alanında uzmanlardan hızlıca teklif alın.`;
+  };
+
+  const goToServiceSearch = (name) => {
+    if (!name) return;
+    navigate(`/services?search=${encodeURIComponent(name)}`);
   };
 
   const jsonLdData = {
@@ -180,7 +154,10 @@ const Home = () => {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#F7F8FC] text-slate-950 font-sans selection:bg-[#c9ff2a] selection:text-black">
+    <main
+      className="min-h-screen overflow-hidden bg-[#f6f7fb] text-slate-950 selection:bg-[#c9ff2a] selection:text-black"
+      style={{ fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+    >
       <Helmet>
         <title>Fırsatİş | Projeleriniz İçin Uzman Freelancer Platformu</title>
         <meta
@@ -195,12 +172,16 @@ const Home = () => {
         <meta name="robots" content="index, follow" />
         <meta name="author" content="Fırsatİş" />
 
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          rel="stylesheet"
+        />
+
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://firsatis.com/" />
-        <meta
-          property="og:title"
-          content="Fırsatİş - Teknoloji Uzmanlarını Bulun"
-        />
+        <meta property="og:title" content="Fırsatİş - Teknoloji Uzmanlarını Bulun" />
         <meta
           property="og:description"
           content="Projeleriniz için doğru uzmanı burada bulun. Yazılım ve tasarımda profesyonel çözümler."
@@ -213,14 +194,8 @@ const Home = () => {
         <meta property="og:locale" content="tr_TR" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:title"
-          content="Fırsatİş - Teknoloji Uzmanlarını Bulun"
-        />
-        <meta
-          name="twitter:description"
-          content="Projeleriniz için doğru uzmanı burada bulun."
-        />
+        <meta name="twitter:title" content="Fırsatİş - Teknoloji Uzmanlarını Bulun" />
+        <meta name="twitter:description" content="Projeleriniz için doğru uzmanı burada bulun." />
         <meta
           name="twitter:image"
           content="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1200"
@@ -230,286 +205,208 @@ const Home = () => {
       </Helmet>
 
       {/* HERO */}
-      <section
-        className="relative px-6 pt-10 pb-24 md:pt-20 md:pb-28"
-        aria-label="Giriş Bölümü"
-      >
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-[680px] w-[680px] -translate-x-1/2 rounded-full bg-blue-200/40 blur-[120px]" />
-          <div className="absolute right-0 top-32 h-[420px] w-[420px] rounded-full bg-[#c9ff2a]/30 blur-[100px]" />
-          <div className="absolute left-0 bottom-0 h-[420px] w-[420px] rounded-full bg-purple-200/40 blur-[100px]" />
+      <section className="relative px-5 pb-20 pt-10 md:px-6 md:pb-28 md:pt-20" aria-label="Giriş Bölümü">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute left-1/2 top-[-120px] h-[620px] w-[620px] -translate-x-1/2 rounded-full bg-blue-200/50 blur-[120px]" />
+          <div className="absolute right-[-120px] top-20 h-[420px] w-[420px] rounded-full bg-[#c9ff2a]/40 blur-[120px]" />
+          <div className="absolute bottom-[-160px] left-[-160px] h-[520px] w-[520px] rounded-full bg-purple-200/50 blur-[130px]" />
         </div>
 
         <div className="mx-auto max-w-7xl">
-          <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="relative z-10 space-y-9">
-              <div className="inline-flex items-center gap-3 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 shadow-sm backdrop-blur">
+          <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="space-y-9">
+              <div className="inline-flex items-center gap-3 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-[11px] font-black uppercase tracking-[0.28em] text-slate-500 shadow-sm backdrop-blur">
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#c9ff2a] opacity-75" />
                   <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#c9ff2a]" />
                 </span>
-                Yeni nesil hizmet pazarı
+                Canlı hizmet pazarı
               </div>
 
               <div className="space-y-6">
-                <h1 className="max-w-5xl text-5xl font-black leading-[0.95] tracking-[-0.06em] text-slate-950 md:text-7xl lg:text-8xl">
-                  İşi bilen
-                  <span className="relative mx-3 inline-block">
+                <h1 className="max-w-5xl text-[3.25rem] font-black leading-[0.92] tracking-[-0.07em] text-slate-950 md:text-7xl lg:text-[5.8rem]">
+                  Projen için doğru uzmanı
+                  <span className="relative ml-2 inline-block whitespace-nowrap">
                     <span className="relative z-10 bg-gradient-to-r from-blue-700 via-indigo-500 to-purple-500 bg-clip-text text-transparent">
-                      uzmanı
+                      tek ekranda bul.
                     </span>
-                    <span className="absolute bottom-2 left-0 -z-0 h-5 w-full rounded-full bg-[#c9ff2a]" />
+                    <span className="absolute bottom-2 left-0 h-5 w-full rounded-full bg-[#c9ff2a] md:h-7" />
                   </span>
-                  dakikalar içinde bul.
                 </h1>
 
                 <p className="max-w-2xl text-lg font-medium leading-8 text-slate-600 md:text-xl">
-                  Yazılım, tasarım, SEO, veri ve dijital projelerin için ilan
-                  oluştur. Uzmanlar teklif versin, sen en doğru kişiyle hızlıca
-                  işe başla.
+                  Veritabanındaki gerçek hizmet kategorilerinden seçim yap, ilanını oluştur,
+                  uzmanlardan teklif al ve mesajlaşarak işi netleştir.
                 </p>
               </div>
 
-              <div className="max-w-2xl">
-                <form
-                  onSubmit={handleSearch}
-                  className="group rounded-[2rem] border border-white/80 bg-white p-2 shadow-[0_24px_80px_rgba(15,23,42,0.10)] transition-all focus-within:shadow-[0_30px_100px_rgba(37,99,235,0.18)]"
-                  role="search"
-                >
-                  <label htmlFor="search-input" className="sr-only">
-                    Uzman veya hizmet arayın
-                  </label>
+              <form
+                onSubmit={handleSearch}
+                className="group max-w-2xl rounded-[2rem] border border-white/80 bg-white p-2 shadow-[0_30px_90px_rgba(15,23,42,0.10)] transition-all focus-within:shadow-[0_35px_110px_rgba(37,99,235,0.20)]"
+                role="search"
+              >
+                <label htmlFor="search-input" className="sr-only">
+                  Uzman veya hizmet arayın
+                </label>
 
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <div className="flex flex-1 items-center gap-3 px-4">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 group-focus-within:bg-blue-50 group-focus-within:text-blue-600">
-                        <Search size={20} aria-hidden="true" />
-                      </div>
-
-                      <input
-                        id="search-input"
-                        name="q"
-                        type="text"
-                        placeholder="Web tasarım, logo, SEO, mobil uygulama..."
-                        className="min-h-[58px] w-full bg-transparent text-base font-bold text-slate-900 outline-none placeholder:text-slate-300 md:text-lg"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        autoComplete="off"
-                      />
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="flex flex-1 items-center gap-3 px-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition group-focus-within:bg-blue-50 group-focus-within:text-blue-600">
+                      <Search size={20} aria-hidden="true" />
                     </div>
-
-                    <button
-                      type="submit"
-                      aria-label="Arama yap"
-                      className="inline-flex items-center justify-center gap-2 rounded-[1.45rem] bg-slate-950 px-8 py-5 text-sm font-black uppercase tracking-wider text-white transition-all hover:-translate-y-0.5 hover:bg-blue-600 active:scale-95"
-                    >
-                      Ara
-                      <ArrowRight size={18} aria-hidden="true" />
-                    </button>
+                    <input
+                      id="search-input"
+                      name="q"
+                      type="text"
+                      placeholder={services[0]?.name ? `${services[0].name} ara...` : "Web tasarım, SEO, logo, yazılım..."}
+                      className="min-h-[58px] w-full bg-transparent text-base font-bold text-slate-950 outline-none placeholder:text-slate-300 md:text-lg"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      autoComplete="off"
+                    />
                   </div>
-                </form>
 
-                <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
-                  {["Web Tasarım", "React", "Logo", "SEO", "Mobil Uygulama"].map(
-                    (item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        onClick={() => {
-                          setSearchTerm(item);
-                          navigate(
-                            `/services?search=${encodeURIComponent(item)}`
-                          );
-                        }}
-                        className="rounded-full border border-white bg-white/70 px-4 py-2 shadow-sm transition hover:border-blue-200 hover:text-blue-600"
-                      >
-                        {item}
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
-
-              <div className="grid max-w-2xl grid-cols-3 gap-3">
-                {stats.map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="rounded-[1.75rem] border border-white/70 bg-white/70 p-5 shadow-sm backdrop-blur"
+                  <button
+                    type="submit"
+                    aria-label="Arama yap"
+                    className="inline-flex items-center justify-center gap-2 rounded-[1.45rem] bg-slate-950 px-8 py-5 text-sm font-black uppercase tracking-wider text-white transition-all hover:-translate-y-0.5 hover:bg-blue-600 active:scale-95"
                   >
-                    <div className="text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
-                      {stat.value}
-                    </div>
-                    <div className="mt-1 text-[11px] font-black uppercase tracking-wider text-slate-400">
-                      {stat.label}
-                    </div>
-                  </div>
-                ))}
+                    Ara
+                    <ArrowRight size={18} aria-hidden="true" />
+                  </button>
+                </div>
+              </form>
+
+              <div className="flex max-w-2xl flex-wrap gap-2">
+                {loadingServices
+                  ? Array(5)
+                      .fill(0)
+                      .map((_, i) => (
+                        <span key={i} className="h-9 w-24 animate-pulse rounded-full bg-white/80" />
+                      ))
+                  : services.slice(0, 6).map((service) => (
+                      <button
+                        key={service._id}
+                        type="button"
+                        onClick={() => goToServiceSearch(service.name)}
+                        className="rounded-full border border-white bg-white/80 px-4 py-2 text-xs font-extrabold text-slate-500 shadow-sm backdrop-blur transition hover:border-blue-200 hover:text-blue-600"
+                      >
+                        {service.name}
+                      </button>
+                    ))}
               </div>
             </div>
 
             <div className="relative">
-              <div className="absolute -left-6 top-12 z-20 hidden rounded-[2rem] border border-white/80 bg-white/90 p-5 shadow-2xl backdrop-blur md:block">
+              <div className="absolute -left-5 top-10 z-20 hidden rotate-[-3deg] rounded-[2rem] border border-white/70 bg-white/90 p-5 shadow-2xl backdrop-blur md:block">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c9ff2a] text-black">
-                    <Check size={22} strokeWidth={3} aria-hidden="true" />
+                    <ShieldCheck size={22} strokeWidth={2.4} aria-hidden="true" />
                   </div>
                   <div>
-                    <p className="text-sm font-black text-slate-950">
-                      Onaylı uzman akışı
-                    </p>
-                    <p className="text-xs font-semibold text-slate-400">
-                      Profil, teklif ve mesajlaşma
-                    </p>
+                    <p className="text-sm font-black text-slate-950">Gerçek kategoriler</p>
+                    <p className="text-xs font-bold text-slate-400">Veritabanından gelir</p>
                   </div>
                 </div>
               </div>
 
-              <div className="absolute -right-3 bottom-16 z-20 hidden rounded-[2rem] border border-white/80 bg-slate-950 p-5 text-white shadow-2xl md:block">
+              <div className="absolute -right-4 bottom-12 z-20 hidden rotate-3 rounded-[2rem] bg-slate-950 p-5 text-white shadow-2xl md:block">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500">
-                    <ArrowUpRight size={22} aria-hidden="true" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600">
+                    <MessageCircle size={22} aria-hidden="true" />
                   </div>
                   <div>
-                    <p className="text-sm font-black">Bugün 12 yeni ilan</p>
-                    <p className="text-xs font-semibold text-white/50">
-                      Kategoriler canlı
-                    </p>
+                    <p className="text-sm font-black">Canlı mesajlaşma</p>
+                    <p className="text-xs font-bold text-white/50">Teklif sonrası iletişim</p>
                   </div>
                 </div>
               </div>
 
-              <div className="relative mx-auto max-w-[560px] rounded-[3rem] border border-white/80 bg-white/60 p-3 shadow-[0_30px_100px_rgba(15,23,42,0.18)] backdrop-blur">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-[2.5rem] bg-slate-200">
-                  <img
-                    src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=2000&auto=format&fit=crop"
-                    className="h-full w-full object-cover"
-                    alt="Bilgisayar başında çalışan profesyonel yazılım ve tasarım uzmanı"
-                    width="600"
-                    height="750"
-                    loading="eager"
-                    decoding="async"
-                  />
+              <div className="relative mx-auto max-w-[560px] rounded-[3rem] border border-white/80 bg-white/70 p-3 shadow-[0_30px_100px_rgba(15,23,42,0.18)] backdrop-blur">
+                <div className="relative overflow-hidden rounded-[2.4rem] bg-slate-950 p-5 text-white">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,255,42,0.28),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.35),transparent_38%)]" />
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/10 to-transparent" />
-
-                  <div className="absolute bottom-6 left-6 right-6 rounded-[2rem] border border-white/20 bg-white/15 p-5 text-white backdrop-blur-xl">
-                    <div className="mb-4 flex items-center justify-between">
-                      <span className="rounded-full bg-white/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest">
-                        Canlı teklif
-                      </span>
-                      <span className="text-xs font-bold text-white/70">
-                        3 dk önce
-                      </span>
+                  <div className="relative z-10 space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.35em] text-white/40">Akış</p>
+                        <h2 className="mt-2 text-2xl font-black tracking-tight">Hizmet panosu</h2>
+                      </div>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-[#c9ff2a]">
+                        <Layers size={24} aria-hidden="true" />
+                      </div>
                     </div>
 
-                    <p className="text-xl font-black leading-tight">
-                      “React panel ve kurumsal web sitesi için teklif geldi.”
-                    </p>
+                    <div className="grid gap-3">
+                      {loadingServices
+                        ? Array(4)
+                            .fill(0)
+                            .map((_, i) => (
+                              <div key={i} className="h-20 animate-pulse rounded-3xl bg-white/10" />
+                            ))
+                        : services.slice(0, 4).map((service, index) => (
+                            <Link
+                              key={service._id}
+                              to={`/create-request/${service._id}`}
+                              className="group flex items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur transition hover:bg-white hover:text-slate-950"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-[#c9ff2a] transition group-hover:bg-[#c9ff2a] group-hover:text-black">
+                                  {getIcon(service.name)}
+                                </div>
+                                <div>
+                                  <p className="font-black tracking-tight">{service.name}</p>
+                                  <p className="text-xs font-bold text-white/45 transition group-hover:text-slate-400">
+                                    {index + 1}. aktif kategori
+                                  </p>
+                                </div>
+                              </div>
+                              <ArrowUpRight size={18} aria-hidden="true" />
+                            </Link>
+                          ))}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 pt-2">
+                      <div className="rounded-3xl bg-white/10 p-4">
+                        <p className="text-2xl font-black">{services.length || "—"}</p>
+                        <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-white/35">Kategori</p>
+                      </div>
+                      <div className="rounded-3xl bg-white/10 p-4">
+                        <p className="text-2xl font-black">3</p>
+                        <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-white/35">Adım</p>
+                      </div>
+                      <div className="rounded-3xl bg-[#c9ff2a] p-4 text-black">
+                        <p className="text-2xl font-black">0₺</p>
+                        <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-black/45">İlan</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
-          <div className="mt-20 grid gap-4 md:grid-cols-3">
-            {featuredCards.map((card) => (
-              <div
-                key={card.title}
-                className="group rounded-[2.5rem] border border-white/70 bg-white/75 p-7 shadow-sm backdrop-blur transition-all hover:-translate-y-1 hover:bg-white hover:shadow-2xl"
-              >
-                <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition-all group-hover:bg-[#c9ff2a] group-hover:text-black">
-                  {card.icon}
-                </div>
-
-                <h3 className="text-xl font-black tracking-tight text-slate-950">
-                  {card.title}
-                </h3>
-                <p className="mt-3 text-sm font-medium leading-6 text-slate-500">
-                  {card.desc}
-                </p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* NASIL ÇALIŞIR */}
-      <section className="px-6 py-20" aria-labelledby="how-it-works-heading">
-        <div className="mx-auto max-w-7xl rounded-[3rem] bg-slate-950 p-8 text-white shadow-[0_30px_100px_rgba(15,23,42,0.25)] md:p-14">
-          <div className="mb-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.35em] text-[#c9ff2a]">
-                Süreç
-              </p>
-              <h2
-                id="how-it-works-heading"
-                className="mt-4 max-w-2xl text-4xl font-black tracking-[-0.04em] md:text-6xl"
-              >
-                İlan aç, teklifleri gör, doğru uzmanla başla.
-              </h2>
-            </div>
-
-            <Link
-              to="/create-request"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-black uppercase tracking-wider text-slate-950 transition hover:bg-[#c9ff2a]"
-            >
-              İlan oluştur
-              <ArrowRight size={18} aria-hidden="true" />
-            </Link>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            {steps.map((step, index) => (
-              <div
-                key={step.title}
-                className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-7"
-              >
-                <div className="absolute -right-6 -top-8 text-[120px] font-black leading-none text-white/[0.03]">
-                  0{index + 1}
-                </div>
-
-                <div className="relative z-10">
-                  <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#c9ff2a] text-black">
-                    {step.icon}
-                  </div>
-
-                  <h3 className="text-2xl font-black tracking-tight">
-                    {step.title}
-                  </h3>
-                  <p className="mt-4 text-sm font-medium leading-7 text-white/55">
-                    {step.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* KATEGORİLER */}
-      <section
-        className="mx-auto max-w-7xl px-6 py-24"
-        aria-labelledby="categories-heading"
-      >
-        <div className="mb-14 flex flex-col justify-between gap-6 border-b border-slate-200 pb-10 md:flex-row md:items-end">
+      {/* DİNAMİK KATEGORİLER */}
+      <section className="mx-auto max-w-7xl px-5 py-20 md:px-6" aria-labelledby="categories-heading">
+        <div className="mb-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.35em] text-blue-600">
-              Kategoriler
-            </p>
-            <h2
-              id="categories-heading"
-              className="mt-4 max-w-2xl text-4xl font-black tracking-[-0.04em] text-slate-950 md:text-6xl"
-            >
-              Projen için en doğru alanı seç.
+            <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.28em] text-blue-600 shadow-sm">
+              <Sparkles size={15} aria-hidden="true" />
+              Veritabanından gelen kategoriler
+            </div>
+            <h2 id="categories-heading" className="mt-5 max-w-3xl text-4xl font-black tracking-[-0.05em] text-slate-950 md:text-6xl">
+              Kullanıcının gerçekten seçebileceği hizmetler.
             </h2>
           </div>
 
           <Link
             to="/services"
-            className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-950 transition hover:text-blue-600"
+            className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-4 text-sm font-black uppercase tracking-wider text-white transition hover:bg-blue-600"
             title="Tüm hizmet kategorilerini görüntüle"
           >
-            Tümünü Gör
+            Tümünü gör
             <ArrowRight size={18} aria-hidden="true" />
           </Link>
         </div>
@@ -519,40 +416,42 @@ const Home = () => {
             ? Array(8)
                 .fill(0)
                 .map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-64 animate-pulse rounded-[2.5rem] bg-white"
-                  />
+                  <div key={i} className="h-72 animate-pulse rounded-[2.5rem] bg-white shadow-sm" />
                 ))
             : services.map((service, index) => (
                 <Link
                   key={service._id}
                   to={`/create-request/${service._id}`}
-                  className={`group relative overflow-hidden rounded-[2.5rem] border border-white bg-white p-8 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl ${
+                  className={`group relative overflow-hidden rounded-[2.5rem] border border-white bg-white p-7 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_90px_rgba(15,23,42,0.14)] ${
                     index === 0 || index === 5 ? "lg:row-span-2" : ""
                   }`}
                   aria-label={`${service.name} kategorisinde ilan oluştur`}
                   title={`${service.name} hizmetleri`}
                 >
-                  <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-blue-100 opacity-0 blur-2xl transition group-hover:opacity-100" />
+                  <div className="absolute -right-20 -top-20 h-44 w-44 rounded-full bg-blue-100 opacity-0 blur-3xl transition group-hover:opacity-100" />
+                  <div className="absolute -bottom-24 -left-24 h-44 w-44 rounded-full bg-[#c9ff2a]/40 opacity-0 blur-3xl transition group-hover:opacity-100" />
 
-                  <div className="relative z-10 flex h-full min-h-48 flex-col justify-between">
+                  <div className="relative z-10 flex h-full min-h-52 flex-col justify-between">
                     <div>
                       <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition-all group-hover:rotate-6 group-hover:bg-[#c9ff2a] group-hover:text-black">
                         {getIcon(service.name)}
                       </div>
 
-                      <h3 className="text-2xl font-black tracking-tight text-slate-950">
+                      <h3 className="text-2xl font-black tracking-[-0.03em] text-slate-950">
                         {service.name}
                       </h3>
-                      <p className="mt-3 text-sm font-semibold leading-6 text-slate-400">
-                        İşin ehli profesyonellerden hızlı teklif alın.
+                      <p className="mt-3 line-clamp-3 text-sm font-semibold leading-6 text-slate-500">
+                        {getServiceDescription(service)}
                       </p>
                     </div>
 
-                    <div className="mt-10 inline-flex items-center gap-2 text-sm font-black text-slate-950 opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100">
-                      İlan oluştur
-                      <ArrowRight size={16} aria-hidden="true" />
+                    <div className="mt-10 flex items-center justify-between">
+                      <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        İlan aç
+                      </span>
+                      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white transition group-hover:bg-blue-600">
+                        <ArrowRight size={18} aria-hidden="true" />
+                      </span>
                     </div>
                   </div>
                 </Link>
@@ -560,51 +459,49 @@ const Home = () => {
         </div>
       </section>
 
-      {/* GÜVEN / FARK */}
-      <section className="px-6 py-20" aria-labelledby="why-heading">
-        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[3rem] bg-[#c9ff2a] p-10 md:p-14">
-            <p className="text-[11px] font-black uppercase tracking-[0.35em] text-black/50">
-              Neden Fırsatİş?
-            </p>
-
-            <h2
-              id="why-heading"
-              className="mt-5 text-4xl font-black tracking-[-0.05em] text-black md:text-6xl"
-            >
-              Daha az karmaşa, daha hızlı eşleşme.
-            </h2>
-
-            <p className="mt-6 text-base font-bold leading-8 text-black/60">
-              İlan sahipleri ücretsiz talep açar. Uzmanlar teklif hakkı ile
-              projelere başvurur. Böylece iki taraf da daha net ve hızlı bir
-              süreç yaşar.
+      {/* SÜREÇ */}
+      <section className="px-5 py-20 md:px-6" aria-labelledby="process-heading">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-[3.5rem] bg-slate-950 p-8 text-white shadow-[0_35px_110px_rgba(15,23,42,0.28)] md:p-14">
+          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.35em] text-[#c9ff2a]">Nasıl çalışır?</p>
+              <h2 id="process-heading" className="mt-5 text-4xl font-black tracking-[-0.05em] md:text-6xl">
+                Karmaşayı azaltan 3 adımlı akış.
+              </h2>
+            </div>
+            <p className="max-w-2xl text-base font-medium leading-8 text-white/55">
+              Ana sayfadaki tüm kategori çıkışları gerçek servis kayıtlarına bağlandı.
+              Kullanıcı kategoriye tıkladığında direkt ilgili hizmet için talep oluşturma sayfasına gider.
             </p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="mt-12 grid gap-4 md:grid-cols-3">
             {[
-              "Talep odaklı teklif sistemi",
-              "Kategori bazlı uzman akışı",
-              "Canlı mesajlaşma deneyimi",
-              "SEO uyumlu hizmet sayfaları",
-            ].map((item) => (
-              <div
-                key={item}
-                className="rounded-[2.5rem] border border-white bg-white p-8 shadow-sm"
-              >
-                <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                  <Check size={22} strokeWidth={3} aria-hidden="true" />
+              {
+                title: "Hizmet seç",
+                desc: "Kategori kartları API'den gelen gerçek servis kayıtlarıyla oluşur.",
+                icon: <Layers size={22} aria-hidden="true" />,
+              },
+              {
+                title: "İlan oluştur",
+                desc: "Kullanıcı seçtiği hizmetin gerçek ID'siyle talep formuna gider.",
+                icon: <PenTool size={22} aria-hidden="true" />,
+              },
+              {
+                title: "Teklifleri yönet",
+                desc: "Uzmanlar teklif verir, taraflar mesajlaşarak işi netleştirir.",
+                icon: <MessageCircle size={22} aria-hidden="true" />,
+              },
+            ].map((step, index) => (
+              <div key={step.title} className="relative overflow-hidden rounded-[2.3rem] border border-white/10 bg-white/[0.06] p-7">
+                <div className="absolute -right-5 -top-8 text-[118px] font-black leading-none text-white/[0.035]">0{index + 1}</div>
+                <div className="relative z-10">
+                  <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#c9ff2a] text-black">
+                    {step.icon}
+                  </div>
+                  <h3 className="text-2xl font-black tracking-tight">{step.title}</h3>
+                  <p className="mt-4 text-sm font-medium leading-7 text-white/55">{step.desc}</p>
                 </div>
-
-                <h3 className="text-xl font-black tracking-tight text-slate-950">
-                  {item}
-                </h3>
-
-                <p className="mt-4 text-sm font-medium leading-6 text-slate-500">
-                  Platform deneyimini basitleştirir, kullanıcıyı doğrudan
-                  aksiyona yönlendirir.
-                </p>
               </div>
             ))}
           </div>
@@ -612,88 +509,57 @@ const Home = () => {
       </section>
 
       {/* PAKETLER */}
-      <section
-        className="mx-auto max-w-7xl px-6 py-24"
-        aria-labelledby="pricing-heading"
-      >
-        <div className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end">
-          <div className="max-w-2xl">
-            <p className="text-[11px] font-black uppercase tracking-[0.35em] text-purple-600">
-              Teklif paketleri
-            </p>
-
-            <h2
-              id="pricing-heading"
-              className="mt-4 text-4xl font-black tracking-[-0.04em] text-slate-950 md:text-6xl"
-            >
-              Uzmanlar için teklif hakkı paketleri.
-            </h2>
-
-            <p className="mt-5 text-lg font-medium leading-8 text-slate-500">
-              Projeler için rekabete hazır olun. Size en uygun paketi seçin ve
-              hemen teklif vermeye başlayın.
-            </p>
-          </div>
+      <section className="mx-auto max-w-7xl px-5 py-20 md:px-6" aria-labelledby="pricing-heading">
+        <div className="mb-12 max-w-3xl">
+          <p className="text-[11px] font-black uppercase tracking-[0.35em] text-purple-600">Teklif paketleri</p>
+          <h2 id="pricing-heading" className="mt-5 text-4xl font-black tracking-[-0.05em] text-slate-950 md:text-6xl">
+            Uzmanlar için net, sade ve hızlı paketler.
+          </h2>
+          <p className="mt-5 text-lg font-medium leading-8 text-slate-500">
+            Projeler için rekabete hazır olun. Size en uygun paketi seçin ve hemen teklif vermeye başlayın.
+          </p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`group relative overflow-hidden rounded-[3rem] border border-white p-8 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${plan.bg}`}
+              className={`group relative overflow-hidden rounded-[3rem] bg-gradient-to-br ${plan.bg} p-8 shadow-sm ring-1 ${plan.ring} transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_35px_100px_rgba(15,23,42,0.16)]`}
             >
+              <div className="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-white/80 blur-3xl transition group-hover:scale-125" />
+
               {plan.popular && (
                 <div className="absolute right-6 top-6 rounded-full bg-slate-950 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white">
-                  En Popüler
+                  En popüler
                 </div>
               )}
-
-              <div className="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-white/80 blur-3xl transition group-hover:scale-125" />
 
               <div className="relative z-10">
                 <div className="mb-10 flex h-16 w-16 items-center justify-center rounded-3xl bg-white shadow-sm">
                   {plan.icon}
                 </div>
 
-                <div className="mb-8">
-                  <h3 className="text-2xl font-black tracking-tight text-slate-950">
-                    {plan.name}
-                  </h3>
-                  <p className="mt-3 min-h-14 text-sm font-semibold leading-6 text-slate-500">
-                    {plan.description}
-                  </p>
-                </div>
+                <h3 className="text-2xl font-black tracking-tight text-slate-950">{plan.name}</h3>
+                <p className="mt-3 min-h-14 text-sm font-semibold leading-6 text-slate-500">{plan.description}</p>
 
-                <div className="mb-8">
-                  <div className="text-6xl font-black tracking-[-0.08em] text-slate-950">
-                    ₺{plan.price}
-                  </div>
-                  <div className="mt-2 text-sm font-black uppercase tracking-widest text-slate-400">
-                    {plan.offers} adet teklif hakkı
-                  </div>
+                <div className="my-9">
+                  <div className="text-6xl font-black tracking-[-0.08em] text-slate-950">₺{plan.price}</div>
+                  <div className="mt-2 text-sm font-black uppercase tracking-widest text-slate-400">{plan.offers} adet teklif hakkı</div>
                 </div>
 
                 <ul className="mb-10 space-y-4">
-                  <li className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-green-600">
-                      <Check size={16} strokeWidth={3} aria-hidden="true" />
-                    </span>
-                    {plan.offers} adet teklif hakkı
-                  </li>
-
-                  <li className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-green-600">
-                      <Check size={16} strokeWidth={3} aria-hidden="true" />
-                    </span>
-                    Öncelikli destek hattı
-                  </li>
-
-                  <li className="flex items-center gap-3 text-sm font-bold text-slate-400">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-300">
-                      <Check size={16} strokeWidth={3} aria-hidden="true" />
-                    </span>
-                    Komisyon ödemesi yok
-                  </li>
+                  {[
+                    `${plan.offers} adet teklif hakkı`,
+                    "Öncelikli destek hattı",
+                    "Komisyon ödemesi yok",
+                  ].map((item) => (
+                    <li key={item} className="flex items-center gap-3 text-sm font-bold text-slate-700">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-green-600">
+                        <Check size={16} strokeWidth={3} aria-hidden="true" />
+                      </span>
+                      {item}
+                    </li>
+                  ))}
                 </ul>
 
                 <button
@@ -701,7 +567,7 @@ const Home = () => {
                   aria-label={`${plan.name} paketini satın al - Fiyat: ₺${plan.price}`}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-8 py-5 text-sm font-black uppercase tracking-wider text-white transition-all hover:bg-blue-600 active:scale-95"
                 >
-                  Hemen Satın Al
+                  Hemen satın al
                   <ArrowRight size={18} aria-hidden="true" />
                 </button>
               </div>
@@ -711,24 +577,21 @@ const Home = () => {
       </section>
 
       {/* FINAL CTA */}
-      <section className="px-6 py-20">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-[3.5rem] bg-slate-950 p-10 text-white shadow-[0_35px_120px_rgba(15,23,42,0.35)] md:p-16">
-          <div className="grid items-center gap-10 lg:grid-cols-[1fr_auto]">
+      <section className="px-5 py-20 md:px-6">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-[3.5rem] bg-slate-950 p-8 text-white shadow-[0_35px_120px_rgba(15,23,42,0.35)] md:p-16">
+          <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.35em] text-[#c9ff2a]">
-                Hemen başla
-              </p>
-
-              <h2 className="mt-5 max-w-3xl text-4xl font-black tracking-[-0.05em] md:text-6xl">
-                Aklındaki projeyi ilana dönüştür, uzmanlar teklif versin.
+              <p className="text-[11px] font-black uppercase tracking-[0.35em] text-[#c9ff2a]">Başlamak için</p>
+              <h2 className="mt-5 max-w-4xl text-4xl font-black tracking-[-0.05em] md:text-6xl">
+                Kategorini seç, ilanını oluştur, teklifleri karşılaştır.
               </h2>
             </div>
 
             <Link
-              to="/create-request"
+              to="/services"
               className="inline-flex items-center justify-center gap-3 rounded-[1.5rem] bg-[#c9ff2a] px-9 py-6 text-sm font-black uppercase tracking-wider text-black transition hover:bg-white active:scale-95"
             >
-              İlan oluştur
+              Hizmetleri keşfet
               <ArrowRight size={20} aria-hidden="true" />
             </Link>
           </div>
@@ -736,31 +599,17 @@ const Home = () => {
       </section>
 
       {/* FOOTER */}
-      <footer
-        className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-10 border-t border-slate-200 px-6 py-14 md:flex-row"
-        role="contentinfo"
-      >
+      <footer className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-10 border-t border-slate-200 px-5 py-14 md:flex-row md:px-6" role="contentinfo">
         <div>
-          <div className="text-3xl font-black uppercase tracking-[-0.08em] text-slate-950">
-            firsatis.com
-          </div>
-          <p className="mt-2 text-xs font-bold uppercase tracking-widest text-slate-400">
-            Uzman hizmet pazarı
-          </p>
+          <div className="text-3xl font-black uppercase tracking-[-0.08em] text-slate-950">firsatis.com</div>
+          <p className="mt-2 text-xs font-bold uppercase tracking-widest text-slate-400">Uzman hizmet pazarı</p>
         </div>
 
         <nav className="flex flex-wrap justify-center gap-8 text-[11px] font-black uppercase tracking-widest text-slate-400">
-          <Link to="/sitemap" className="transition hover:text-black">
-            Dizin
-          </Link>
-
-          <Link to="/privacy-policy" className="transition hover:text-black">
-            Güvenlik
-          </Link>
-
-          <Link to="/kvkk" className="transition hover:text-black">
-            Kvkk
-          </Link>
+          <Link to="/services" className="transition hover:text-black">Hizmetler</Link>
+          <Link to="/login" className="transition hover:text-black">Giriş</Link>
+          <Link to="/register" className="transition hover:text-black">Kayıt</Link>
+          <Link to="/dashboard/packages" className="transition hover:text-black">Paketler</Link>
         </nav>
       </footer>
     </main>
