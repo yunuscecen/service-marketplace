@@ -20,10 +20,21 @@ exports.createOffer = async (req, res, next) => {
       });
     }
 
-    const request = await ServiceRequest.findById(requestId);
-    if (!request) {
-      return res.status(404).json({ success: false, error: "İlan bulunamadı" });
-    }
+  const request = await ServiceRequest.findById(requestId);
+
+if (!request) {
+  return res.status(404).json({
+    success: false,
+    error: "İlan bulunamadı",
+  });
+}
+
+if (request.status !== "active") {
+  return res.status(400).json({
+    success: false,
+    error: "Bu ilana şu anda teklif verilemez.",
+  });
+}
 
     if (request.user.toString() === req.user.id) {
       return res.status(400).json({

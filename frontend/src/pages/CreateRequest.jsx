@@ -21,6 +21,7 @@ const CreateRequest = () => {
 
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [dynamicAnswers, setDynamicAnswers] = useState({});
   const [formData, setFormData] = useState({
@@ -119,32 +120,42 @@ const CreateRequest = () => {
   };
 
   const handleSubmit = async () => {
-    const formattedAnswers = Object.entries(dynamicAnswers).map(([q, a]) => ({
-      question: q,
-      answer: Array.isArray(a) ? a.join(", ") : a,
-    }));
+  if (submitLoading) return;
 
-    formattedAnswers.push({
-      question: "Ne zaman lazım?",
-      answer: formData.datePreference,
-    });
+  const formattedAnswers = Object.entries(dynamicAnswers).map(([q, a]) => ({
+    question: q,
+    answer: Array.isArray(a) ? a.join(", ") : a,
+  }));
 
-    const requestPayload = {
-      serviceId: serviceId,
-      city: formData.city,
-      district: formData.district,
-      description: formData.description,
-      answers: formattedAnswers,
-    };
+  formattedAnswers.push({
+    question: "Ne zaman lazım?",
+    answer: formData.datePreference,
+  });
 
-    try {
-      await api.post("/requests", requestPayload);
-      toast.success("Talebiniz başarıyla oluşturuldu! Uzmanlar inceliyor.");
-      navigate("/dashboard"); // Kullanıcıyı paneline yönlendirmek daha mantıklı
-    } catch (error) {
-      toast.error(error.response?.data?.error || "Bir hata oluştu.");
-    }
+  const requestPayload = {
+    serviceId: serviceId,
+    city: formData.city,
+    district: formData.district,
+    description: formData.description,
+    answers: formattedAnswers,
   };
+
+  try {
+    setSubmitLoading(true);
+
+    await api.post("/requests", requestPayload);
+
+    toast.success(
+      "Talebiniz oluşturuldu. Admin onayından sonra yayına alınacak."
+    );
+
+    navigate("/dashboard");
+  } catch (error) {
+    toast.error(error.response?.data?.error || "Bir hata oluştu.");
+  } finally {
+    setSubmitLoading(false);
+  }
+};
 
   if (loading)
     return (
@@ -539,12 +550,18 @@ const CreateRequest = () => {
               Devam Et <ChevronRight size={20} className="ml-2" />
             </button>
           ) : (
-            <button
-              onClick={handleSubmit}
-              className="flex items-center bg-[#c9ff2a] text-black px-10 py-4 rounded-2xl font-black hover:shadow-xl hover:shadow-lime-100 transition-all transform hover:-translate-y-1 active:scale-95"
-            >
-              Yayınla <CheckCircle size={20} className="ml-2" />
-            </button>
+           <button
+  onClick={handleSubmit}
+  disabled={submitLoading}
+  className={`flex items-center bg-[#c9ff2a] text-black px-10 py-4 rounded-2xl font-black transition-all transform active:scale-95 ${
+    submitLoading
+      ? "opacity-60 cursor-not-allowed"
+      : "hover:shadow-xl hover:shadow-lime-100 hover:-translate-y-1"
+  }`}
+>
+  {submitLoading ? "Gönderiliyor..." : "Yayınla"}
+  {!submitLoading && <CheckCircle size={20} className="ml-2" />}
+</button>
           )}
         </div>
       </div>
