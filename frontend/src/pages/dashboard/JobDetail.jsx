@@ -34,7 +34,7 @@ const JobDetail = () => {
   const [chat, setChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-
+const [isSending, setIsSending] = useState(false);
 const hasCredits = Number(user?.offerLimit || 0) > 0;
 
   const [offerData, setOfferData] = useState({
@@ -125,10 +125,12 @@ const handleSubmit = async (e) => {
   }
 };
 
- const handleSendMessage = async (e) => {
+const handleSendMessage = async (e) => {
   e.preventDefault();
 
-  if (!newMessage.trim()) return;
+  if (!newMessage.trim() || isSending) return;
+
+  setIsSending(true);
 
   const receiverId = job.user?._id || job.user;
 
@@ -142,15 +144,30 @@ const handleSubmit = async (e) => {
 
   try {
     const res = await api.post("/chats/message", messageData);
-socket.emit("send_message", {
-  ...res.data.data,
-  ...messageData,
-});
 
-    setMessages((prev) => [...prev, res.data.data]);
+    socket.emit("send_message", {
+      ...res.data.data,
+      ...messageData,
+    });
+
+    setMessages((prev) => {
+      const alreadyExists = prev.some(
+        (msg) =>
+          msg._id &&
+          res.data.data._id &&
+          msg._id.toString() === res.data.data._id.toString()
+      );
+
+      if (alreadyExists) return prev;
+
+      return [...prev, res.data.data];
+    });
+
     setNewMessage("");
   } catch (error) {
     toast.error("Mesaj gönderilemedi.");
+  } finally {
+    setIsSending(false);
   }
 };
 
@@ -289,12 +306,15 @@ socket.emit("send_message", {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                 />
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-100"
-                >
-                  <Send size={20} />
-                </button>
+              <button
+  type="submit"
+  disabled={isSending}
+  className={`bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-100 ${
+    isSending ? "opacity-60 cursor-not-allowed" : ""
+  }`}
+>
+  <Send size={20} />
+</button>
               </form>
             </div>
           ) : (

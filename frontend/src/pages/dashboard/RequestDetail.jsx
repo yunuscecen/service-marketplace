@@ -62,56 +62,81 @@ const RequestDetail = () => {
   }, [id]);
 
   // --- ANLIK BİLDİRİM VE MESAJ DİNLEYİCİSİ ---
-  useEffect(() => {
-    if (user) {
-      socket.emit("setup", user._id || user.id);
+useEffect(() => {
+  if (!user) return;
+
+  const currentUserId = user._id || user.id;
+
+  socket.emit("setup", currentUserId);
+
+  const isSameId = (a, b) => a?.toString() === b?.toString();
+
+  const addMessageIfNotExists = (message) => {
+    setMessages((prev) => {
+      const alreadyExists = prev.some(
+        (msg) =>
+          msg._id &&
+          message._id &&
+          msg._id.toString() === message._id.toString()
+      );
+
+      if (alreadyExists) return prev;
+
+      return [...prev, message];
+    });
+  };
+
+  const handleReceiveMessage = (data) => {
+    const senderId = data.sender?._id || data.sender;
+
+    if (isSameId(senderId, currentUserId)) return;
+
+    if (activeChat && isSameId(data.chatId, activeChat._id)) {
+      addMessageIfNotExists(data);
+    }
+  };
+
+  const handleNewMessageNotification = (data) => {
+    const senderId = data.sender?._id || data.sender;
+
+    if (isSameId(senderId, currentUserId)) return;
+
+    // Aktif sohbet açıksa mesajı burada tekrar ekleme.
+    // Çünkü receive_message zaten ekliyor.
+    if (activeChat && isSameId(data.chatId, activeChat._id)) {
+      return;
     }
 
-    const handleNewMessage = (data) => {
-      const currentUserId = user?._id || user?.id;
-      const senderId = data.sender?._id || data.sender;
+    setOffers((prevOffers) =>
+      prevOffers.map((o) => {
+        const providerId = o.provider?._id || o.provider;
+        const isThisProvider = isSameId(providerId, senderId);
 
-      if (senderId !== currentUserId) {
-        // 1. Eğer o sohbet şu an açıksa mesajı ekrana bas
-        if (activeChat && data.chatId === activeChat._id) {
-          setMessages((prev) => [...prev, data]);
+        if (isThisProvider) {
+          return {
+            ...o,
+            unreadCount: (o.unreadCount || 0) + 1,
+          };
         }
 
-        // 2. HER DURUMDA: Teklif listesinde o kişinin sayısını anlık artır
-        setOffers((prevOffers) =>
-          prevOffers.map((o) => {
-            const providerId = o.provider?._id || o.provider;
-            const isThisProvider =
-              providerId.toString() === senderId.toString();
-            // Eğer sohbet açık değilse veya başka birinin sohbeti açıksa sayıyı artır
-            if (
-              isThisProvider &&
-              (!activeChat || data.chatId !== activeChat._id)
-            ) {
-              return { ...o, unreadCount: (o.unreadCount || 0) + 1 };
-            }
-            return o;
-          }),
-        );
+        return o;
+      })
+    );
 
-        // 3. HER DURUMDA: Üstteki ana ilan başlığındaki toplam sayıyı artır
-        if (!activeChat || data.chatId !== activeChat._id) {
-          setRequest((prev) => ({
-            ...prev,
-            unreadCount: (prev.unreadCount || 0) + 1,
-          }));
-        }
-      }
-    };
+    setRequest((prev) => ({
+      ...prev,
+      unreadCount: (prev?.unreadCount || 0) + 1,
+    }));
+  };
 
-    socket.on("receive_message", handleNewMessage);
-    socket.on("new_message_notification", handleNewMessage);// Genel bildirim için
+  socket.on("receive_message", handleReceiveMessage);
+  socket.on("new_message_notification", handleNewMessageNotification);
 
-    return () => {
-      socket.off("receive_message", handleNewMessage);
-      socket.off("new_message_notification", handleNewMessage);
-    };
-  }, [activeChat, user]);
+  return () => {
+    socket.off("receive_message", handleReceiveMessage);
+    socket.off("new_message_notification", handleNewMessageNotification);
+  };
+}, [activeChat, user]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
