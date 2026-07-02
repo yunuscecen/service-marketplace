@@ -115,7 +115,7 @@ const Home = () => {
       "Yazılım, tasarım and SEO projeleriniz için uzman freelancer platformu.",
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://firsatis.com/services?search={search_term_string}",
+      target: "/frontend/public/cover-firsat-is.jpg",
       "query-input": "required name=search_term_string",
     },
     publisher: {
