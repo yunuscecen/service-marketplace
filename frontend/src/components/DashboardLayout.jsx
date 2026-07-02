@@ -1,7 +1,8 @@
 // src/components/DashboardLayout.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import api from "../services/api";
 import {
   LayoutDashboard,
   List,
@@ -20,12 +21,30 @@ const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const handleLogout = () => {
     logout();
     navigate("/");
   };
+  useEffect(() => {
+    const fetchUnreadNotifications = async () => {
+      if (!user) return;
 
+      try {
+        const res = await api.get("/notifications");
+
+        const unreadCount = (res.data.data || []).filter(
+          (notification) => !notification.isRead
+        ).length;
+
+        setUnreadNotificationCount(unreadCount);
+      } catch (error) {
+        setUnreadNotificationCount(0);
+      }
+    };
+
+    fetchUnreadNotifications();
+  }, [user, location.pathname]);
   const menuItems = [
     {
       name: "Genel Bakış",
@@ -33,10 +52,11 @@ const DashboardLayout = ({ children }) => {
       icon: <LayoutDashboard size={20} />,
     },
  {
-    name: "Bildirimler",
-    path: "/dashboard/notifications",
-    icon: <Bell size={20} />,
-  },
+      name: "Bildirimler",
+      path: "/dashboard/notifications",
+      icon: <Bell size={20} />,
+      badge: unreadNotificationCount,
+    },
     // --- MÜŞTERİ (User) ---
     ...(user?.role === "user"
       ? [
@@ -134,18 +154,26 @@ const DashboardLayout = ({ children }) => {
                 {item.header}
               </p>
             ) : (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                  location.pathname === item.path
-                    ? "bg-blue-50 text-blue-600 font-medium shadow-sm shadow-blue-100"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                {item.icon}
-                <span className="text-sm">{item.name}</span>
-              </Link>
+             <Link
+  key={item.path}
+  to={item.path}
+  className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all ${
+    location.pathname === item.path
+      ? "bg-blue-50 text-blue-600 font-medium shadow-sm shadow-blue-100"
+      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+  }`}
+>
+  <div className="flex items-center gap-3">
+    {item.icon}
+    <span className="text-sm">{item.name}</span>
+  </div>
+
+  {item.badge > 0 && (
+    <span className="bg-red-500 text-white text-[10px] font-black min-w-5 h-5 px-1.5 flex items-center justify-center rounded-full">
+      {item.badge}
+    </span>
+  )}
+</Link>
             ),
           )}
         </nav>
