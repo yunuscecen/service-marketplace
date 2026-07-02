@@ -41,7 +41,7 @@ const [error, setError] = useState("");
   <div className="bg-red-50 border border-red-100 text-red-600 p-8 rounded-3xl text-center font-bold">
     {error}
   </div>
-) : jobs.length > 0 ? ((
+) : jobs.length > 0 ? (
         <div className="grid gap-6">
           {jobs.map((job) => (
             <div
