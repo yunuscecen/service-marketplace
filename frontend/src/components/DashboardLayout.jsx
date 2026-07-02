@@ -11,8 +11,9 @@ import {
   Users,
   LogOut,
   ShieldAlert,
-  ClipboardList, // İlan yönetimi için bu ikonu ekledik
+  ClipboardList,
   Rocket,
+  Bell,
 } from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
@@ -31,7 +32,11 @@ const DashboardLayout = ({ children }) => {
       path: "/dashboard",
       icon: <LayoutDashboard size={20} />,
     },
-
+ {
+    name: "Bildirimler",
+    path: "/dashboard/notifications",
+    icon: <Bell size={20} />,
+  },
     // --- MÜŞTERİ (User) ---
     ...(user?.role === "user"
       ? [
