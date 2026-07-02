@@ -15,6 +15,7 @@ const adminRoutes = require("./routes/admin");
 const offers = require("./routes/offer");
 const reviews = require("./routes/review");
 const chats = require("./routes/chat");
+const notifications = require("./routes/notification");
 
 dotenv.config();
 connectDB();
@@ -95,6 +96,7 @@ app.use("/api/v1/offers", offers);
 app.use("/api/v1/reviews", reviews);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/chats", chats);
+app.use("/api/v1/notifications", notifications);
 
 app.get("/", (req, res) => {
   res.send("API Çalışıyor... Hizmet Uygulaması Backend");

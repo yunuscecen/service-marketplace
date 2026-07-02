@@ -1,7 +1,7 @@
 const Offer = require("../models/Offer");
 const ServiceRequest = require("../models/ServiceRequest");
 const User = require("../models/User");
-
+const createNotification = require("../utils/createNotification");
 // --- KRİTİK EKSİK BURASIYDI: Modelleri ekledik ---
 const Chat = require("../models/Chat");
 const Message = require("../models/Message");
@@ -70,7 +70,14 @@ if (request.status !== "active") {
 
     providerUser.offerLimit -= 1;
     await providerUser.save({ validateBeforeSave: false });
-
+await createNotification({
+  user: request.user,
+  title: "Yeni teklif aldın",
+  message: "İlanına yeni bir hizmet veren teklif verdi.",
+  type: "new_offer",
+  relatedRequest: request._id,
+  relatedOffer: offer._id,
+});
     res.status(201).json({ success: true, data: offer });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
@@ -251,7 +258,14 @@ exports.acceptOffer = async (req, res, next) => {
     request.acceptedAt = new Date();
 
     await request.save();
-
+    await createNotification({
+  user: offer.provider,
+  title: "Teklifin kabul edildi",
+  message: "Müşteri teklifini kabul etti. İş süreci başladı.",
+  type: "offer_accepted",
+  relatedRequest: request._id,
+  relatedOffer: offer._id,
+});
     res.status(200).json({
       success: true,
       data: {

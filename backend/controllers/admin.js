@@ -1,7 +1,7 @@
 const User = require("../models/User");
 const ServiceRequest = require("../models/ServiceRequest");
 const Offer = require("../models/Offer");
-
+const createNotification = require("../utils/createNotification");
 // @desc Tüm kullanıcıları listele
 exports.getAllUsers = async (req, res) => {
   try {
@@ -111,6 +111,13 @@ exports.approveRequest = async (req, res) => {
     request.rejectionReason = "";
 
     await request.save();
+    await createNotification({
+  user: request.user,
+  title: "İlanın onaylandı",
+  message: "İlanın admin tarafından onaylandı ve teklife açıldı.",
+  type: "request_approved",
+  relatedRequest: request._id,
+});
 
     res.status(200).json({
       success: true,
@@ -150,7 +157,13 @@ exports.rejectRequest = async (req, res) => {
       req.body.reason || "İlan admin tarafından reddedildi.";
 
     await request.save();
-
+await createNotification({
+  user: request.user,
+  title: "İlanın reddedildi",
+  message: request.rejectionReason || "İlanın admin tarafından reddedildi.",
+  type: "request_rejected",
+  relatedRequest: request._id,
+});
     res.status(200).json({
       success: true,
       data: request,
