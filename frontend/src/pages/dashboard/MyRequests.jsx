@@ -5,6 +5,7 @@ import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../services/api";
 import { Calendar, MapPin, Eye, List } from "lucide-react";
 import toast from "react-hot-toast";
+import toast from "react-hot-toast";
 import {
   getRequestStatusInfo,
   getRequestStatusDescription,
@@ -13,17 +14,18 @@ import {
 const MyRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-
+const [error, setError] = useState("");
   useEffect(() => {
     const fetchRequests = async () => {
       try {
         const res = await api.get("/requests/my-requests");
         setRequests(res.data.data);
       } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
+  setError("Talepleriniz yüklenemedi.");
+  toast.error("Talepleriniz yüklenemedi.");
+} finally {
+  setLoading(false);
+}
     };
     fetchRequests();
   }, []);
@@ -77,8 +79,14 @@ const getStatusBadge = (status) => {
       </div>
 
       {loading ? (
-        <div className="text-center py-10">Yükleniyor...</div>
-      ) : requests.length > 0 ? (
+  <div className="text-center py-20 text-gray-400 font-bold">
+    Talepleriniz yükleniyor...
+  </div>
+) : error ? (
+  <div className="bg-red-50 border border-red-100 text-red-600 p-8 rounded-3xl text-center font-bold">
+    {error}
+  </div>
+) : requests.length > 0 ? (
         <div className="grid gap-4">
           {requests.map((req) => (
             <div

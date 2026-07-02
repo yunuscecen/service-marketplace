@@ -6,6 +6,7 @@ import { getOfferStatusInfo } from "../../utils/statusHelpers";
 import { useAuth } from "../../context/AuthContext"; // AuthContext eklendi
 import { io } from "socket.io-client"; // Socket eklendi
 import toast from "react-hot-toast";
+
 import {
   Calendar,
   MapPin,
@@ -26,6 +27,7 @@ const MyOffers = () => {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchOffers = async () => {
@@ -33,10 +35,11 @@ const MyOffers = () => {
         const res = await api.get("/offers/my-offers");
         setOffers(res.data.data);
       } catch (error) {
-        console.error("Teklifler alınamadı", error);
-      } finally {
-        setLoading(false);
-      }
+  setError("Teklifleriniz yüklenemedi.");
+  toast.error("Teklifleriniz yüklenemedi.");
+} finally {
+  setLoading(false);
+}
     };
     fetchOffers();
   }, []);
@@ -153,8 +156,14 @@ const getStatusBadge = (status) => {
       </div>
 
       {loading ? (
-        <div className="p-10 text-center">Yükleniyor...</div>
-      ) : filteredOffers.length > 0 ? (
+  <div className="text-center py-20 text-gray-400 font-bold">
+    Teklifleriniz yükleniyor...
+  </div>
+) : error ? (
+  <div className="bg-red-50 border border-red-100 text-red-600 p-8 rounded-3xl text-center font-bold">
+    {error}
+  </div>
+) : filteredOffers.length > 0 ? (
         <div className="grid gap-4">
           {filteredOffers.map((offer) => (
             <div

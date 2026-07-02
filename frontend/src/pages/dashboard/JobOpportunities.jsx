@@ -2,22 +2,24 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../services/api";
+import toast from "react-hot-toast";
 import { MapPin, Calendar, ArrowRight, User, HelpCircle } from "lucide-react";
 
 const JobOpportunities = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-
+const [error, setError] = useState("");
   useEffect(() => {
     const fetchJobs = async () => {
       try {
         const res = await api.get("/requests/feed");
         setJobs(res.data.data);
       } catch (error) {
-        console.error("İşler çekilemedi", error);
-      } finally {
-        setLoading(false);
-      }
+  setError("İş fırsatları yüklenemedi.");
+  toast.error("İş fırsatları yüklenemedi.");
+} finally {
+  setLoading(false);
+}
     };
     fetchJobs();
   }, []);
@@ -32,10 +34,14 @@ const JobOpportunities = () => {
       </div>
 
       {loading ? (
-        <div className="p-10 text-center text-gray-400 animate-pulse font-medium">
-          Yükleniyor...
-        </div>
-      ) : jobs.length > 0 ? (
+  <div className="text-center py-20 text-gray-400 font-bold">
+    İş fırsatları yükleniyor...
+  </div>
+) : error ? (
+  <div className="bg-red-50 border border-red-100 text-red-600 p-8 rounded-3xl text-center font-bold">
+    {error}
+  </div>
+) : jobs.length > 0 ? ((
         <div className="grid gap-6">
           {jobs.map((job) => (
             <div
