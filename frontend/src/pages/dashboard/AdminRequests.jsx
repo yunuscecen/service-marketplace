@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../services/api";
+
 import {
   Trash2,
   Eye,
@@ -41,10 +42,10 @@ const AdminRequests = () => {
           className: "bg-yellow-50 text-yellow-700 border-yellow-100",
         };
       case "active":
-        return {
-          text: "Yayında",
-          className: "bg-green-50 text-green-700 border-green-100",
-        };
+  return {
+    text: "Teklife Açık",
+    className: "bg-green-50 text-green-700 border-green-100",
+  };
       case "in_progress":
         return {
           text: "İş Devam Ediyor",

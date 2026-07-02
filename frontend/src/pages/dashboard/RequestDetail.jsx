@@ -5,6 +5,10 @@ import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { io } from "socket.io-client";
 import {
+  getRequestStatusInfo,
+  getRequestStatusDescription,
+} from "../../utils/statusHelpers";
+import {
   ArrowLeft,
   Calendar,
   MapPin,
@@ -253,37 +257,17 @@ const handleAcceptOffer = async (offerId) => {
       </DashboardLayout>
     );
   if (!request) return null;
+const getStatusBadge = (status) => {
+  const statusInfo = getRequestStatusInfo(status);
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "pending":
-        return (
-          <span className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-sm font-bold flex items-center w-max gap-2">
-            <Clock size={16} /> Onay Bekliyor
-          </span>
-        );
-      case "active":
-        return (
-          <span className="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-bold flex items-center w-max gap-2">
-            <CheckCircle size={16} /> Teklife Açık
-          </span>
-        );
-      case "in_progress":
-        return (
-          <span className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-bold flex items-center w-max gap-2">
-            <Clock size={16} /> İşlemde
-          </span>
-        );
-      case "completed":
-        return (
-          <span className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-bold flex items-center w-max gap-2">
-            <CheckCircle size={16} /> Tamamlandı
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
+  return (
+    <span
+      className={`px-4 py-2 rounded-full text-sm font-bold flex items-center w-max gap-2 ${statusInfo.className}`}
+    >
+      {statusInfo.text}
+    </span>
+  );
+};
 
   return (
     <DashboardLayout>
@@ -302,9 +286,13 @@ const handleAcceptOffer = async (offerId) => {
             <p className="text-gray-500 text-sm mt-1">
               Talep No: #{request._id.slice(-6).toUpperCase()}
             </p>
+            <p className="text-xs text-gray-400 mt-2">
+  {getRequestStatusDescription(request.status)}
+</p>
           </div>
           <div className="flex items-center gap-3">
             {getStatusBadge(request.status)}
+            
             {/* BAŞLIKTAKİ TOPLAM BİLDİRİM */}
             {request.unreadCount > 0 && (
               <div className="flex items-center justify-center relative -ml-1">

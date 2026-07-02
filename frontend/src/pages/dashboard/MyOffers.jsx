@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../services/api";
+import { getOfferStatusInfo } from "../../utils/statusHelpers";
 import { useAuth } from "../../context/AuthContext"; // AuthContext eklendi
 import { io } from "socket.io-client"; // Socket eklendi
 import {
@@ -81,29 +82,17 @@ const MyOffers = () => {
     if (filter === "pending") return offer.status === "pending";
     return true;
   });
+const getStatusBadge = (status) => {
+  const statusInfo = getOfferStatusInfo(status);
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "accepted":
-        return (
-          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-            <CheckCircle size={14} /> Kabul Edildi
-          </span>
-        );
-      case "rejected":
-        return (
-          <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-            <XCircle size={14} /> Reddedildi
-          </span>
-        );
-      default:
-        return (
-          <span className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-sm font-bold flex items-center w-max gap-2">
-            <Clock size={16} /> Cevap Bekleniyor
-          </span>
-        );
-    }
-  };
+  return (
+    <span
+      className={`px-3 py-1 rounded-full text-xs font-bold ${statusInfo.className}`}
+    >
+      {statusInfo.text}
+    </span>
+  );
+};
 
   return (
     <DashboardLayout>
@@ -209,6 +198,11 @@ const MyOffers = () => {
                   </div>
                 </div>
               )}
+              {offer.status === "rejected" && (
+  <div className="mt-4 bg-red-50 text-red-600 p-3 rounded-xl text-sm font-medium">
+    Bu iş için başka bir hizmet verenle anlaşma yapıldı.
+  </div>
+)}
             </div>
           ))}
         </div>

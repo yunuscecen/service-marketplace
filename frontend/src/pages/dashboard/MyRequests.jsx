@@ -4,6 +4,10 @@ import { Link } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../services/api";
 import { Calendar, MapPin, Eye, List } from "lucide-react";
+import {
+  getRequestStatusInfo,
+  getRequestStatusDescription,
+} from "../../utils/statusHelpers";
 
 const MyRequests = () => {
   const [requests, setRequests] = useState([]);
@@ -23,42 +27,17 @@ const MyRequests = () => {
     fetchRequests();
   }, []);
 
-  // Durum Rozetleri
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "pending":
-        return (
-          <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">
-            Onay Bekliyor
-          </span>
-        );
-      case "active":
-        return (
-          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
-            Teklife Açık
-          </span>
-        );
-      case "in_progress":
-        return (
-          <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">
-            İşlemde
-          </span>
-        );
-      case "completed":
-        return (
-          <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-bold">
-            Tamamlandı
-          </span>
-        );
-      default:
-        return (
-          <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
-            Belirsiz
-          </span>
-        );
-    }
-  };
+const getStatusBadge = (status) => {
+  const statusInfo = getRequestStatusInfo(status);
 
+  return (
+    <span
+      className={`px-3 py-1 rounded-full text-xs font-bold ${statusInfo.className}`}
+    >
+      {statusInfo.text}
+    </span>
+  );
+};
   return (
     <DashboardLayout>
       <div className="flex justify-between items-center mb-8">
@@ -87,6 +66,9 @@ const MyRequests = () => {
                     {req.service?.name}
                   </h3>
                   {getStatusBadge(req.status)}
+                  <p className="text-xs text-gray-400 mt-2">
+  {getRequestStatusDescription(req.status)}
+</p>
                 </div>
 
                 <div className="flex items-center gap-4 text-sm text-gray-500">

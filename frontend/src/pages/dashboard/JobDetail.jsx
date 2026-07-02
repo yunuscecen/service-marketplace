@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../services/api";
+import { getRequestStatusInfo } from "../../utils/statusHelpers";
 import { useAuth } from "../../context/AuthContext";
 import { io } from "socket.io-client";
 import {
@@ -184,7 +185,7 @@ const handleSendMessage = async (e) => {
       </DashboardLayout>
     );
   if (!job) return null;
-
+const requestStatusInfo = getRequestStatusInfo(job.status);
   return (
     <DashboardLayout>
       <button
@@ -202,11 +203,11 @@ const handleSendMessage = async (e) => {
               <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase">
                 {job.service?.name}
               </span>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${job.status === "active" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
-              >
-                {job.status === "active" ? "Teklife Açık" : "Bekliyor"}
-              </span>
+             <span
+  className={`px-3 py-1 rounded-full text-xs font-bold ${requestStatusInfo.className}`}
+>
+  {requestStatusInfo.text}
+</span>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-4">
               {job.service?.name}
