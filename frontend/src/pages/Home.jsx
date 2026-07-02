@@ -33,7 +33,7 @@ const Home = () => {
     {
       id: "basic",
       name: "Başlangıç",
-      offers: 4,
+      offers: 3,
       price: 495,
       icon: <Zap size={24} className="text-zinc-500" aria-hidden="true" />,
       bg: "bg-zinc-50",
@@ -44,7 +44,7 @@ const Home = () => {
     {
       id: "pro",
       name: "Profesyonel",
-      offers: 8,
+      offers: 6,
       price: 935,
       icon: <Rocket size={24} className="text-zinc-900" aria-hidden="true" />,
       bg: "bg-zinc-900",
@@ -56,7 +56,7 @@ const Home = () => {
     {
       id: "premium",
       name: "Kurumsal",
-      offers: 12,
+      offers: 9,
       price: 1375,
       icon: <Crown size={24} className="text-zinc-500" aria-hidden="true" />,
       bg: "bg-white",
