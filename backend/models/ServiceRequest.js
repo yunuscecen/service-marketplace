@@ -1,4 +1,3 @@
-// backend/models/ServiceRequest.js
 const mongoose = require("mongoose");
 
 const ServiceRequestSchema = new mongoose.Schema({
@@ -44,9 +43,9 @@ const ServiceRequestSchema = new mongoose.Schema({
   },
 
   allowPhoneAfterOffer: {
-  type: Boolean,
-  default: true,
-},
+    type: Boolean,
+    default: true,
+  },
 
   // İlanın sistemdeki durumu
   status: {
@@ -81,38 +80,8 @@ const ServiceRequestSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+
   // Kabul edilen teklif / anlaşma bilgileri
-acceptedOffer: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "Offer",
-},
-
-acceptedProvider: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "User",
-},
-
-agreedPrice: {
-  type: Number,
-},
-
-agreedDeliveryTime: {
-  type: String,
-},
-
-acceptedAt: {
-  type: Date,
-},
-
-completedAt: {
-  type: Date,
-},
-
-canceledAt: {
-  type: Date,
-},
-
-  // İleride teklif kabul edildiğinde kullanacağız
   acceptedOffer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Offer",
@@ -147,9 +116,6 @@ canceledAt: {
     type: Date,
     default: Date.now,
   },
-  completedAt: {
-  type: Date,
-},
 });
 
 module.exports = mongoose.model("ServiceRequest", ServiceRequestSchema);
