@@ -1,25 +1,29 @@
 // backend/controllers/auth.js
 const User = require("../models/User");
 
-// @desc    Kullanıcı Kaydı (Register)
-// @route   POST /api/v1/auth/register
-// @access  Public
-// backend/controllers/auth.js
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, role, phone } = req.body; // phone eklendi
+    const { name, email, password, role, phone } = req.body;
+
+    // Public register sadece normal kullanıcı ve hizmet veren oluşturabilir.
+    // Admin, support, marketing gibi roller API'den gönderilse bile kabul edilmez.
+    const allowedPublicRoles = ["user", "provider"];
+    const safeRole = allowedPublicRoles.includes(role) ? role : "user";
 
     const user = await User.create({
       name,
       email,
       password,
-      role,
-      phone, // phone eklendi
+      role: safeRole,
+      phone,
     });
 
     sendTokenResponse(user, 200, res);
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
   }
 };
 

@@ -30,7 +30,21 @@ exports.protect = async (req, res, next) => {
     // Böylece sonraki aşamalarda "req.user.id" diyerek kimin işlem yaptığını bileceğiz.
     req.user = await User.findById(decoded.id);
 
-    next(); // Sorun yok, devam et
+if (!req.user) {
+  return res.status(401).json({
+    success: false,
+    error: "Kullanıcı bulunamadı.",
+  });
+}
+
+if (req.user.isSuspended) {
+  return res.status(403).json({
+    success: false,
+    error: "Hesabınız askıya alınmıştır. Lütfen destekle iletişime geçin.",
+  });
+}
+
+next();
   } catch (err) {
     return res
       .status(401)
