@@ -232,6 +232,25 @@ const handleAcceptOffer = async (offerId) => {
     setAcceptingOfferId(null);
   }
 };
+const handleCancelRequest = async () => {
+  if (!window.confirm("Bu ilanı iptal etmek istediğine emin misin?")) {
+    return;
+  }
+
+  try {
+    const res = await api.put(`/requests/${id}/cancel`);
+
+    toast.success(res.data.message || "İlan iptal edildi.");
+
+    setRequest((prev) => ({
+      ...prev,
+      status: "canceled",
+      canceledAt: new Date().toISOString(),
+    }));
+  } catch (error) {
+    toast.error(error.response?.data?.error || "İlan iptal edilemedi.");
+  }
+};
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
@@ -292,7 +311,14 @@ const getStatusBadge = (status) => {
           </div>
           <div className="flex items-center gap-3">
             {getStatusBadge(request.status)}
-            
+            {["pending", "active"].includes(request.status) && (
+  <button
+    onClick={handleCancelRequest}
+    className="bg-red-50 text-red-600 px-4 py-2 rounded-full text-sm font-bold hover:bg-red-100 transition"
+  >
+    İlanı İptal Et
+  </button>
+)}
             {/* BAŞLIKTAKİ TOPLAM BİLDİRİM */}
             {request.unreadCount > 0 && (
               <div className="flex items-center justify-center relative -ml-1">

@@ -224,3 +224,46 @@ exports.completeRequest = async (req, res, next) => {
     });
   }
 };
+// @desc Müşteri ilanını iptal eder
+exports.cancelRequest = async (req, res, next) => {
+  try {
+    const request = await ServiceRequest.findById(req.params.id);
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        error: "İlan bulunamadı.",
+      });
+    }
+
+    if (request.user.toString() !== req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: "Bu ilanı iptal etme yetkiniz yok.",
+      });
+    }
+
+    if (!["pending", "active"].includes(request.status)) {
+      return res.status(400).json({
+        success: false,
+        error: "Sadece onay bekleyen veya teklife açık ilanlar iptal edilebilir.",
+      });
+    }
+
+    request.status = "canceled";
+    request.canceledAt = new Date();
+
+    await request.save();
+
+    res.status(200).json({
+      success: true,
+      data: request,
+      message: "İlan başarıyla iptal edildi.",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};

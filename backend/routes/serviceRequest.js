@@ -6,6 +6,7 @@ const {
   getRequest,
   getOpenRequests,
   completeRequest,
+  cancelRequest,
 } = require("../controllers/serviceRequest");
 const { protect } = require("../middlewares/auth");
 
@@ -24,5 +25,6 @@ router.get("/feed", getOpenRequests);
 
 router.get("/:id", getRequest);
 router.put("/:id/complete", completeRequest);
+router.put("/:id/cancel", cancelRequest);
 
 module.exports = router;

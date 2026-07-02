@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import DashboardLayout from "../../components/DashboardLayout";
 import api from "../../services/api";
 import { Calendar, MapPin, Eye, List } from "lucide-react";
+import toast from "react-hot-toast";
 import {
   getRequestStatusInfo,
   getRequestStatusDescription,
@@ -27,6 +28,31 @@ const MyRequests = () => {
     fetchRequests();
   }, []);
 
+  const handleCancelRequest = async (requestId) => {
+  if (!window.confirm("Bu ilanı iptal etmek istediğine emin misin?")) {
+    return;
+  }
+
+  try {
+    const res = await api.put(`/requests/${requestId}/cancel`);
+
+    toast.success(res.data.message || "İlan iptal edildi.");
+
+    setRequests((prev) =>
+      prev.map((request) =>
+        request._id === requestId
+          ? {
+              ...request,
+              status: "canceled",
+              canceledAt: new Date().toISOString(),
+            }
+          : request
+      )
+    );
+  } catch (error) {
+    toast.error(error.response?.data?.error || "İlan iptal edilemedi.");
+  }
+};
 const getStatusBadge = (status) => {
   const statusInfo = getRequestStatusInfo(status);
 
@@ -101,6 +127,14 @@ const getStatusBadge = (status) => {
                 >
                   <Eye size={18} /> Detaylar
                 </Link>
+                {["pending", "active"].includes(req.status) && (
+  <button
+    onClick={() => handleCancelRequest(req._id)}
+    className="mt-3 text-red-600 bg-red-50 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-100 transition"
+  >
+    İptal Et
+  </button>
+)}
               </div>
             </div>
           ))}
