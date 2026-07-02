@@ -315,3 +315,63 @@ exports.getMyOffers = async (req, res, next) => {
     res.status(400).json({ success: false, error: error.message });
   }
 };
+
+// @desc Hizmet veren kendi teklifini geri çeker
+exports.withdrawOffer = async (req, res, next) => {
+  try {
+    const offer = await Offer.findById(req.params.id);
+
+    if (!offer) {
+      return res.status(404).json({
+        success: false,
+        error: "Teklif bulunamadı.",
+      });
+    }
+
+    if (offer.provider.toString() !== req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: "Bu teklifi geri çekme yetkiniz yok.",
+      });
+    }
+
+    if (offer.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        error: "Sadece cevap bekleyen teklifler geri çekilebilir.",
+      });
+    }
+
+    const request = await ServiceRequest.findById(offer.request);
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        error: "İlan bulunamadı.",
+      });
+    }
+
+    if (request.status !== "active") {
+      return res.status(400).json({
+        success: false,
+        error: "Bu ilan artık teklife açık olmadığı için teklif geri çekilemez.",
+      });
+    }
+
+    offer.status = "withdrawn";
+    offer.withdrawnAt = new Date();
+
+    await offer.save();
+
+    res.status(200).json({
+      success: true,
+      data: offer,
+      message: "Teklifiniz geri çekildi.",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};

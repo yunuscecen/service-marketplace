@@ -29,11 +29,15 @@ const OfferSchema = new mongoose.Schema({
     required: [true, "Lütfen bir ön yazı yazınız"],
     maxlength: [500, "Mesaj 500 karakteri geçemez"],
   },
-  status: {
-    type: String,
-    enum: ["pending", "accepted", "rejected"], // Beklemede, Kabul, Red
-    default: "pending",
-  },
+ status: {
+  type: String,
+  enum: ["pending", "accepted", "rejected", "withdrawn"],
+  default: "pending",
+},
+
+withdrawnAt: {
+  type: Date,
+},
   createdAt: {
     type: Date,
     default: Date.now,

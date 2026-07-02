@@ -7,6 +7,7 @@ const {
   getOffersForRequest,
   acceptOffer,
   getMyOffers,
+  withdrawOffer,
 } = require("../controllers/offer");
 const { protect, authorize } = require("../middlewares/auth");
 
@@ -23,5 +24,5 @@ router.get("/my-offers", authorize("provider"), getMyOffers);
 
 router.get("/request/:requestId", getOffersForRequest);
 router.put("/:id/accept", acceptOffer);
-
+router.put("/:id/withdraw", authorize("provider"), withdrawOffer);
 module.exports = router;

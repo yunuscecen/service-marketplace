@@ -5,6 +5,7 @@ import api from "../../services/api";
 import { getOfferStatusInfo } from "../../utils/statusHelpers";
 import { useAuth } from "../../context/AuthContext"; // AuthContext eklendi
 import { io } from "socket.io-client"; // Socket eklendi
+import toast from "react-hot-toast";
 import {
   Calendar,
   MapPin,
@@ -75,12 +76,37 @@ const MyOffers = () => {
       socket.off("new_notification", handleNewNotification);
     };
   }, [user]);
+const handleWithdrawOffer = async (offerId) => {
+  if (!window.confirm("Bu teklifi geri çekmek istediğine emin misin?")) {
+    return;
+  }
 
+  try {
+    const res = await api.put(`/offers/${offerId}/withdraw`);
+
+    toast.success(res.data.message || "Teklif geri çekildi.");
+
+    setOffers((prev) =>
+      prev.map((offer) =>
+        offer._id === offerId
+          ? {
+              ...offer,
+              status: "withdrawn",
+              withdrawnAt: new Date().toISOString(),
+            }
+          : offer
+      )
+    );
+  } catch (error) {
+    toast.error(error.response?.data?.error || "Teklif geri çekilemedi.");
+  }
+};
   const filteredOffers = offers.filter((offer) => {
     if (filter === "all") return true;
     if (filter === "accepted") return offer.status === "accepted";
-    if (filter === "pending") return offer.status === "pending";
-    return true;
+if (filter === "pending") return offer.status === "pending";
+if (filter === "withdrawn") return offer.status === "withdrawn";
+return true;
   });
 const getStatusBadge = (status) => {
   const statusInfo = getOfferStatusInfo(status);
@@ -186,6 +212,14 @@ const getStatusBadge = (status) => {
                   >
                     İlanı Görüntüle <ArrowRight size={16} />
                   </Link>
+                  {offer.status === "pending" && offer.request?.status === "active" && (
+  <button
+    onClick={() => handleWithdrawOffer(offer._id)}
+    className="mt-3 bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-100 transition"
+  >
+    Teklifi Geri Çek
+  </button>
+)}
                 </div>
               </div>
 
