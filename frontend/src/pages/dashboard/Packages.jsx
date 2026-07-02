@@ -1,11 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Check, Zap, Crown, Rocket } from "lucide-react";
-import api from "../../services/api";
 import toast from "react-hot-toast";
 
 const Packages = () => {
-  const [purchaseLoadingId, setPurchaseLoadingId] = useState(null);
   const plans = [
     {
       id: "basic",
@@ -33,40 +31,16 @@ const Packages = () => {
       color: "border-purple-100",
     },
   ];
-
- const handlePurchase = async (plan) => {
-  if (purchaseLoadingId) return;
-
-  try {
-    setPurchaseLoadingId(plan.id);
-
-    const res = await api.post("/auth/add-credits", {
-      packageKey: plan.id,
-    });
-
-    toast.success(
-      res.data.message ||
-        `${plan.name} paketi tanımlandı! ${plan.offers} yeni teklif hakkı kazandınız.`,
-      {
-        duration: 5000,
-        icon: "💰",
-      }
-    );
-
-    setTimeout(() => window.location.reload(), 1500);
-  } catch (error) {
-    toast.error(
-      error.response?.data?.error || "Ödeme işlemi şu an gerçekleştirilemiyor."
-    );
-  } finally {
-    setPurchaseLoadingId(null);
-  }
+const handlePurchase = () => {
+  toast.error("Ödeme sistemi henüz entegre edilmedi. Paket satın alma şu anda aktif değil.", {
+    duration: 5000,
+  });
 };
 
   return (
     <DashboardLayout>
       <div className="text-center max-w-2xl mx-auto mb-16">
-        <h1 className="text-4xl font-light tracking-tighter mb-4">
+        <h1 className="text-4xl font-bold mb-4">
           Teklif Paketleri
         </h1>
         <p className="text-gray-500 font-light ">
@@ -109,18 +83,15 @@ const Packages = () => {
               </li>
             </ul>
 
-           <button
-  onClick={() => handlePurchase(plan)}
-  disabled={purchaseLoadingId === plan.id}
+<button
+  onClick={handlePurchase}
   className={`w-full py-4 rounded-2xl font-bold text-sm transition-all ${
-    purchaseLoadingId === plan.id
-      ? "opacity-60 cursor-not-allowed"
-      : plan.popular
+    plan.popular
       ? "bg-black text-white hover:bg-gray-800"
       : "bg-gray-50 text-black hover:bg-gray-100"
   }`}
 >
-  {purchaseLoadingId === plan.id ? "Tanımlanıyor..." : "Hemen Satın Al"}
+  Yakında Aktif Olacak
 </button>
           </div>
         ))}
