@@ -1,6 +1,19 @@
 // backend/controllers/auth.js
 const User = require("../models/User");
-
+const CREDIT_PACKAGES = {
+  basic: {
+    name: "Başlangıç Paketi",
+    credits: 4,
+  },
+  pro: {
+    name: "Profesyonel Paket",
+    credits: 8,
+  },
+  premium: {
+    name: "Kurumsal Paket",
+    credits: 12,
+  },
+};
 exports.register = async (req, res, next) => {
   try {
     const { name, email, password, role, phone } = req.body;
@@ -102,13 +115,63 @@ const sendTokenResponse = (user, statusCode, res) => {
 };
 exports.addCredits = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    // Mevcut kredisine yenisini ekle
-    user.offerLimit += req.body.credits;
-    await user.save({ validateBeforeSave: false });
+    // Bu endpoint ödeme entegrasyonu gelene kadar sadece geliştirme/test içindir.
+    // Production'da açık kalmasın.
+    if (
+      process.env.NODE_ENV === "production" &&
+      process.env.ALLOW_TEST_CREDITS !== "true"
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "Paket yükleme işlemi ödeme sistemi üzerinden yapılmalıdır.",
+      });
+    }
 
-    res.status(200).json({ success: true, data: user });
+    if (req.user.role !== "provider") {
+      return res.status(403).json({
+        success: false,
+        error: "Sadece hizmet verenler teklif hakkı satın alabilir.",
+      });
+    }
+
+    const { packageKey } = req.body;
+
+    const selectedPackage = CREDIT_PACKAGES[packageKey];
+
+    if (!selectedPackage) {
+      return res.status(400).json({
+        success: false,
+        error: "Geçersiz paket seçimi.",
+      });
+    }
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "Kullanıcı bulunamadı.",
+      });
+    }
+
+    user.offerLimit += selectedPackage.credits;
+
+    await user.save({
+      validateBeforeSave: false,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user,
+        package: selectedPackage,
+      },
+      message: `${selectedPackage.name} yüklendi. ${selectedPackage.credits} teklif hakkı eklendi.`,
+    });
   } catch (error) {
-    res.status(400).json({ success: false });
+    res.status(400).json({
+      success: false,
+      error: error.message || "Teklif hakkı eklenemedi.",
+    });
   }
 };
