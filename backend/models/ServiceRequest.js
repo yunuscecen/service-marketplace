@@ -147,6 +147,9 @@ canceledAt: {
     type: Date,
     default: Date.now,
   },
+  completedAt: {
+  type: Date,
+},
 });
 
 module.exports = mongoose.model("ServiceRequest", ServiceRequestSchema);
