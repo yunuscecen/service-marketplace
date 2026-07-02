@@ -101,7 +101,7 @@ const Notifications = () => {
     <DashboardLayout>
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-3xl font-light tracking-tighter text-gray-900 uppercase">
+          <h1 className="text-3xl font-bold  text-gray-900 uppercase">
             Bildirimler
           </h1>
 
